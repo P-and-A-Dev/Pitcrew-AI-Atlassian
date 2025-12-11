@@ -1,0 +1,10 @@
+{
+  "name": "pitcrew-ai-atlassian",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev:forge": "cd apps/forge-app && forge tunnel",
+    "build:forge": "cd apps/forge-app && forge deploy",
+    "dev:dashboard": "cd apps/dashboard && pnpm dev"
+  }
+}
