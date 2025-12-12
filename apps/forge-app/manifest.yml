@@ -1,0 +1,19 @@
+modules:
+  jira:projectPage:
+    - key: pitcrew-ai-atlassian-hello-world-project-page
+      resource: main
+      resolver:
+        function: resolver
+      title: Pitcrew-AI-Atlassian
+  function:
+    - key: resolver
+      handler: index.handler
+resources:
+  - key: main
+    path: static/dashboard
+app:
+  runtime:
+    name: nodejs22.x
+    memoryMB: 256
+    architecture: arm64
+  id: ari:cloud:ecosystem::app/11fed2dc-a9b3-4934-9f7d-7f22f234e229

@@ -5,6 +5,9 @@
   "scripts": {
     "dev:forge": "cd apps/forge-app && forge tunnel",
     "build:forge": "cd apps/forge-app && forge deploy",
-    "dev:dashboard": "cd apps/dashboard && pnpm dev"
-  }
+    "dev:dashboard": "npm run dev -w dashboard"
+  },
+  "workspaces": [
+    "apps/*"
+  ]
 }
