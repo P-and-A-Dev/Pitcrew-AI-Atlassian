@@ -1,6 +1,6 @@
 import "./App.css";
 import DashboardLayout from "./layout/DashboardLayout";
-import {TelemetryKpis} from "./Components/TelemetryKpis.tsx";
+import { TelemetryKpis } from "./Components/TelemetryKpis.tsx";
 import { RiskDistributionChart } from "./Components/RiskDistributionChart";
 
 function App() {

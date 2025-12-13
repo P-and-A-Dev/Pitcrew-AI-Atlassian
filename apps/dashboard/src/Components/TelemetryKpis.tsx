@@ -1,5 +1,5 @@
 import { KpiCard } from "./KpiCard";
-
+import {RiskBadge} from "./badges/RiskBadge.tsx";
 export function TelemetryKpis() {
     return (
         <section className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -8,6 +8,9 @@ export function TelemetryKpis() {
                 value={12}
                 hint="Pull requests awaiting review"
             />
+            <RiskBadge level="high" />
+            <RiskBadge level="medium" />
+            <RiskBadge level="low" />
 
             <KpiCard
                 label="High Risk PRs"
