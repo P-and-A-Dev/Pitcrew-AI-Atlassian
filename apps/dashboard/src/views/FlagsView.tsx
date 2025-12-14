@@ -40,7 +40,6 @@ export function FlagsView() {
                 subtitle="Pull requests requiring immediate attention"
             />
 
-            {/* High Risk PRs */}
             <TelemetryCard title="High Risk Pull Requests">
                 <table className="w-full text-sm">
                     <thead className="opacity-60">
@@ -69,7 +68,6 @@ export function FlagsView() {
                 </table>
             </TelemetryCard>
 
-            {/* Blocked PRs */}
             <TelemetryCard title="Blocked Pull Requests">
                 <div className="space-y-3">
                     {blockedPrs.map((pr) => (

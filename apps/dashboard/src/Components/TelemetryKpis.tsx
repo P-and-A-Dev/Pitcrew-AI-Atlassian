@@ -1,4 +1,4 @@
-import { KpiCard } from "./KpiCard";
+import { KpiCard } from "./cards/KpiCard.tsx";
 import {RiskBadge} from "./badges/RiskBadge.tsx";
 export function TelemetryKpis() {
     return (
