@@ -1,13 +1,13 @@
 import "./App.css";
 import DashboardLayout from "./layout/DashboardLayout";
-import { TelemetryKpis } from "./Components/TelemetryKpis.tsx";
 import { RiskDistributionChart } from "./Components/RiskDistributionChart";
+import { FlagsView} from "./views/FlagsView.tsx";
 
 function App() {
     return (
         <DashboardLayout>
             <div className="space-y-6">
-                <TelemetryKpis />
+                <FlagsView />
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="lg:col-span-1">
