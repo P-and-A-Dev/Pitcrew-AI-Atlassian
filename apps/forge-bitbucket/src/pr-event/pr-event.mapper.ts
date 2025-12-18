@@ -59,7 +59,7 @@ function logInvalid(reason: string, raw: RawPrEvent) {
 
 /**
  * Map raw payload -> internal stable model.
- * Retourne null si invalide (et log l'erreur).
+ * Return null if invalid (and log the error).
  */
 export function parseBitbucketPrEvent(rawUnknown: unknown): InternalPr | null {
     if (!isObject(rawUnknown)) {
