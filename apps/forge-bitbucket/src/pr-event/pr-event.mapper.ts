@@ -101,7 +101,7 @@ export function parsePrEvent(rawUnknown: unknown): InternalPr | null {
 
     const timestamp = asString(raw.timestamp) ?? new Date().toISOString();
 
-    const internal: InternalPr = {
+    return {
         timestamp,
         eventType: normalizeEventType(raw.eventType),
 
@@ -130,6 +130,4 @@ export function parsePrEvent(rawUnknown: unknown): InternalPr | null {
 
         selfGenerated: raw.selfGenerated === true,
     };
-
-    return internal;
 }
