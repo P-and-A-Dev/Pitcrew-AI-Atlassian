@@ -61,7 +61,7 @@ function logInvalid(reason: string, raw: RawPrEvent) {
  * Map raw payload -> internal stable model.
  * Return null if invalid (and log the error).
  */
-export function parseBitbucketPrEvent(rawUnknown: unknown): InternalPr | null {
+export function parsePrEvent(rawUnknown: unknown): InternalPr | null {
     if (!isObject(rawUnknown)) {
         console.error("Invalid Bitbucket PR event: payload is not an object");
         return null;

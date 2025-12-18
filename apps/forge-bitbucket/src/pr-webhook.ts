@@ -1,10 +1,17 @@
-import {InternalPr} from "./types/internal-pr";
-import {Context} from "./types/context";
+import {parsePrEvent} from "./pr-event/pr-event.mapper";
 
-export async function handler(e: any, c: any) {
-    let event: InternalPr = JSON.parse(JSON.stringify(e));
-    let context: Context = JSON.parse(JSON.stringify(c));
-    console.log("[CONTEXT]:", event);
-    console.log("[EVENT]:", context);
+export async function onPullRequestEvent(e: any, c: any) {
+    console.log("[EVENT]", e);
+    console.log("[CONTEXT]", c);
+    const pr = parsePrEvent(e);
+
+    if (!pr) {
+        console.error("Failed to parse PR event");
+        return;
+    }
+
+    console.log("✅ PR Event Validated & Mapped Successfully:");
+    console.log(JSON.stringify(pr, null, 2));
+
     return true;
 }

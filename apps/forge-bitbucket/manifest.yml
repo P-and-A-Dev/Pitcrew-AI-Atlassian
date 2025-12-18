@@ -10,7 +10,7 @@ modules:
 
   function:
     - key: pr-events-func
-      handler: pr-webhook.handler
+      handler: pr-webhook.onPullRequestEvent
 
 permissions:
   scopes:
