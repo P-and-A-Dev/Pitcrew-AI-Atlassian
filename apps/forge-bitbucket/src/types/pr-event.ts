@@ -1,4 +1,4 @@
-export interface PREvent {
+export interface PrEvent {
     timestamp: Date;
     actor: Actor;
     repository: Project;
