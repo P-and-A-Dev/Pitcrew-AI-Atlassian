@@ -1,5 +1,5 @@
 {
-  "name": "jira-project-page-custom-ui",
+  "name": "jira-project-page",
   "version": "1.1.16",
   "main": "index.js",
   "license": "MIT",

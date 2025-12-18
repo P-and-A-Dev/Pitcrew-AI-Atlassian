@@ -3,8 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "dev:forge": "cd apps/forge-app && forge tunnel",
-    "build:forge": "cd apps/forge-app && forge deploy",
+    "dev:forge-app": "cd apps/forge-app && forge tunnel",
+    "build": "npm run build:dashboard && npm run build:forge-app",
+    "build:dashboard": "cd apps/dashboard && npm run build",
+    "build:forge-app": "cd apps/forge-app && forge deploy",
     "dev:dashboard": "npm run dev -w dashboard"
   },
   "workspaces": [
