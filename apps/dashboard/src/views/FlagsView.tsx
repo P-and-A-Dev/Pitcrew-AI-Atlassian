@@ -81,7 +81,7 @@ export function FlagsView() {
                                 <p className="text-xs opacity-60">{pr.reason}</p>
                             </div>
 
-                            <div className="text-right">
+                             <div className="text-right">
                                 <p className="text-sm font-semibold text-yellow-400">
                                     {pr.daysBlocked}d blocked
                                 </p>
