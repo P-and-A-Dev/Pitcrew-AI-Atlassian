@@ -1,46 +1,46 @@
 export type RawPrEvent = {
-    timestamp?: string;
-    actor?: {
-        type?: string;
-        accountId?: string;
-        uuid?: string;
-    };
+	timestamp?: string;
+	actor?: {
+		type?: string;
+		accountId?: string;
+		uuid?: string;
+	};
 
-    repository?: {
-        uuid?: string;
-    };
+	repository?: {
+		uuid?: string;
+	};
 
-    workspace?: {
-        uuid?: string;
-    };
+	workspace?: {
+		uuid?: string;
+	};
 
-    pullrequest?: {
-        id?: number;
-        title?: string;
-        state?: string;
-        source?: {
-            branch?: any;
-            commit?: { hash?: string };
-        };
-        destination?: {
-            branch?: any;
-            commit?: { hash?: string };
-        };
-        mergeCommit?: { hash?: string };
-    };
+	pullrequest?: {
+		id?: number;
+		title?: string;
+		state?: string;
+		source?: {
+			branch?: any;
+			commit?: { hash?: string };
+		};
+		destination?: {
+			branch?: any;
+			commit?: { hash?: string };
+		};
+		mergeCommit?: { hash?: string };
+	};
 
-    eventType?: string;
+	eventType?: string;
 
-    context?: {
-        cloudId?: string;
-        moduleKey?: string;
-        userAccess?: { enabled?: boolean };
-    };
+	context?: {
+		cloudId?: string;
+		moduleKey?: string;
+		userAccess?: { enabled?: boolean };
+	};
 
-    permissions?: {
-        scopes?: string[];
-    };
+	permissions?: {
+		scopes?: string[];
+	};
 
-    selfGenerated?: boolean;
-    contextToken?: string;
+	selfGenerated?: boolean;
+	contextToken?: string;
 };
