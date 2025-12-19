@@ -15,6 +15,7 @@ modules:
 permissions:
   scopes:
     - read:pullrequest:bitbucket
+    - read:repository:bitbucket
 
 app:
   runtime:
