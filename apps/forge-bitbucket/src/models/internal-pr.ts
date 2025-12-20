@@ -42,7 +42,6 @@ export type InternalPr = {
 	reviewers?: string[];
 	sizeCategory?: "very_small" | "small" | "medium" | "large" | "unknown";
 
-	// Risk Scoring
 	riskScore?: number;
 	riskColor?: "green" | "yellow" | "red";
 	riskFactors?: string[];
