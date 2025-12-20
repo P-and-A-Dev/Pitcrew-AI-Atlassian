@@ -12,12 +12,18 @@ export async function onPullRequestEvent(e: any, _: any) {
 		return;
 	}
 
+	if (pr.eventType === "avi:bitbucket:fulfilled:pullrequest" || pr.eventType === "avi:bitbucket:rejected:pullrequest") {
+		await storageService.deletePrAnalysisState(pr.repoUuid, pr.prId);
+		console.log(`🏁 PR #${pr.prId} closed (${pr.state}). Storage cleaned up.`);
+		return true;
+	}
+
 	if (!pr.sourceCommitHash) {
 		console.warn("Skipping analysis: No source commit hash found");
 		return;
 	}
 
-	const lastAnalysis = await storageService.getPrAnalysisState(pr.prId);
+	const lastAnalysis = await storageService.getPrAnalysisState(pr.repoUuid, pr.prId);
 
 	if (lastAnalysis && lastAnalysis.lastSourceCommitHash === pr.sourceCommitHash) {
 		console.log(`ℹ️ [SMART GATING] Skipping analysis for PR #${pr.prId}: Source hash ${pr.sourceCommitHash} matches last analysis.`);
@@ -64,7 +70,7 @@ export async function onPullRequestEvent(e: any, _: any) {
 		}
 	}
 
-	await storageService.setPrAnalysisState(pr.prId, {
+	await storageService.setPrAnalysisState(pr.repoUuid, pr.prId, {
 		lastSourceCommitHash: pr.sourceCommitHash,
 		lastAnalyzedAt: new Date().toISOString()
 	});

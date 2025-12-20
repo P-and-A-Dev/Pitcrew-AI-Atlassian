@@ -1,4 +1,5 @@
 import { InternalPr } from "../models/internal-pr";
+import { RISK_WEIGHTS, RISK_THRESHOLDS, TIMING_THRESHOLDS } from "../config/constants";
 
 export class RiskScoringService {
 
@@ -7,12 +8,12 @@ export class RiskScoringService {
 		const factors: string[] = [];
 
 		if (!pr.reviewers || pr.reviewers.length === 0) {
-			score -= 30;
-			factors.push("No Reviewers (-30)");
+			score -= RISK_WEIGHTS.NO_REVIEWERS_PENALTY;
+			factors.push(`No Reviewers (-${RISK_WEIGHTS.NO_REVIEWERS_PENALTY})`);
 		}
 
 		if (pr.analysisMetrics && pr.analysisMetrics.criticalFilesCount > 0) {
-			const penalty = pr.analysisMetrics.criticalFilesCount * 20;
+			const penalty = pr.analysisMetrics.criticalFilesCount * RISK_WEIGHTS.CRITICAL_FILE_PENALTY_PER_FILE;
 			score -= penalty;
 			factors.push(`Critical Files Modified: ${pr.analysisMetrics.criticalFilesCount} (-${penalty})`);
 		}
@@ -21,40 +22,40 @@ export class RiskScoringService {
 		const hasTests = (pr.analysisMetrics?.testFilesCount ?? 0) > 0;
 
 		if (hasCodeChanges && !hasTests) {
-			score -= 20;
-			factors.push("No Tests Detected (-20)");
+			score -= RISK_WEIGHTS.NO_TESTS_PENALTY;
+			factors.push(`No Tests Detected (-${RISK_WEIGHTS.NO_TESTS_PENALTY})`);
 		}
 
 		if (pr.sizeCategory === "large") {
-			score -= 20;
-			factors.push("Large PR Size (-20)");
+			score -= RISK_WEIGHTS.LARGE_PR_PENALTY;
+			factors.push(`Large PR Size (-${RISK_WEIGHTS.LARGE_PR_PENALTY})`);
 		} else if (pr.sizeCategory === "medium") {
-			score -= 10;
-			factors.push("Medium PR Size (-10)");
+			score -= RISK_WEIGHTS.MEDIUM_PR_PENALTY;
+			factors.push(`Medium PR Size (-${RISK_WEIGHTS.MEDIUM_PR_PENALTY})`);
 		}
 
 		if (pr.sizeCategory === "very_small") {
-			score += 10;
-			factors.push("Bonus: Very Small PR (+10)");
+			score += RISK_WEIGHTS.VERY_SMALL_PR_BONUS;
+			factors.push(`Bonus: Very Small PR (+${RISK_WEIGHTS.VERY_SMALL_PR_BONUS})`);
 		}
 
 		const date = new Date(pr.timestamp);
 		const day = date.getUTCDay();
 		const hour = date.getUTCHours();
 		const isWeekend = day === 0 || day === 6;
-		const isLate = hour >= 20 || hour < 6;
+		const isLate = hour >= TIMING_THRESHOLDS.LATE_START_HOUR || hour < TIMING_THRESHOLDS.LATE_END_HOUR;
 
 		if (isWeekend || isLate) {
-			score -= 10;
-			factors.push("Off-hours Submission (-10)");
+			score -= RISK_WEIGHTS.OFF_HOURS_PENALTY;
+			factors.push(`Off-hours Submission (-${RISK_WEIGHTS.OFF_HOURS_PENALTY})`);
 		}
 
 		score = Math.max(0, Math.min(100, score));
 
 		let color: "green" | "yellow" | "red" = "green";
-		if (score < 50) {
+		if (score < RISK_THRESHOLDS.RED_BELOW) {
 			color = "red";
-		} else if (score < 80) {
+		} else if (score < RISK_THRESHOLDS.YELLOW_BELOW) {
 			color = "yellow";
 		}
 

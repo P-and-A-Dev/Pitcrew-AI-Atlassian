@@ -1,44 +1,36 @@
-import { InternalFileMod } from "../models/internal-pr";
-
-export interface PrAnalysisMetrics {
-    criticalFilesCount: number;
-    testFilesCount: number;
-    criticalPaths: string[];
-}
-
-const CRITICAL_KEYWORDS = ["core", "auth", "infra", "payments", "security", "database"];
-const TEST_KEYWORDS = [".test.", ".spec.", "__tests__", "test/"];
+import { InternalFileMod, PrAnalysisMetrics } from "../models/internal-pr";
+import { CRITICAL_KEYWORDS, TEST_KEYWORDS } from "../config/constants";
 
 export class DiffAnalyzerService {
 
-    analyzeFiles(files: InternalFileMod[]): PrAnalysisMetrics {
-        const criticalPaths = new Set<string>();
-        let testFilesCount = 0;
-        let criticalFilesCount = 0;
+	analyzeFiles(files: InternalFileMod[]): PrAnalysisMetrics {
+		const criticalPaths = new Set<string>();
+		let testFilesCount = 0;
+		let criticalFilesCount = 0;
 
-        for (const file of files) {
-            const path = file.path.toLowerCase();
+		for (const file of files) {
+			const path = file.path.toLowerCase();
 
-            if (TEST_KEYWORDS.some(k => path.includes(k))) {
-                testFilesCount++;
-                continue;
-            }
+			if (TEST_KEYWORDS.some(k => path.includes(k))) {
+				testFilesCount++;
+				continue;
+			}
 
-            for (const keyword of CRITICAL_KEYWORDS) {
-                if (path.includes(keyword)) {
-                    criticalPaths.add(keyword);
-                    criticalFilesCount++;
-                    break;
-                }
-            }
-        }
+			for (const keyword of CRITICAL_KEYWORDS) {
+				if (path.includes(keyword)) {
+					criticalPaths.add(keyword);
+					criticalFilesCount++;
+					break;
+				}
+			}
+		}
 
-        return {
-            criticalFilesCount,
-            testFilesCount,
-            criticalPaths: Array.from(criticalPaths)
-        };
-    }
+		return {
+			criticalFilesCount,
+			testFilesCount,
+			criticalPaths: Array.from(criticalPaths)
+		};
+	}
 }
 
 export const diffAnalyzerService = new DiffAnalyzerService();
