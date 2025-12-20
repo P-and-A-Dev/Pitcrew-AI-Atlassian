@@ -39,15 +39,14 @@ export type InternalPr = {
 
 	analysisMetrics?: PrAnalysisMetrics;
 
-	// Process & Timing
-	reviewers?: string[]; // List of accountIds
+	reviewers?: string[];
 	sizeCategory?: "very_small" | "small" | "medium" | "large" | "unknown";
 };
 
 export type PrAnalysisMetrics = {
 	criticalFilesCount: number;
 	testFilesCount: number;
-	criticalPaths: string[]; // e.g. ["auth", "payments"]
+	criticalPaths: string[];
 };
 
 export type InternalFileMod = {

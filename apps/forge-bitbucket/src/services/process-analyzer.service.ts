@@ -32,7 +32,6 @@ export class ProcessAnalyzerService {
         const isWeekend = day === 0 || day === 6;
 
         // Late = after 8 PM (20:00) or before 6 AM (06:00) UTC
-        // Adjust timezone as needed, assuming UTC for now for simplicity.
         const isLate = hour >= 20 || hour < 6;
 
         return { isLate, isWeekend };
