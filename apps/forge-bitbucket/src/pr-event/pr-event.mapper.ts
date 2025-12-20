@@ -1,6 +1,6 @@
 import { route, asApp } from "@forge/api";
 import { RawPrEvent } from "../types/raw-pr-event";
-import { InternalPr, InternalPrEventType, InternalPrState } from "../models/internal-pr";
+import { InternalFileMod, InternalPr, InternalPrEventType, InternalPrState } from "../models/internal-pr";
 
 function isObject(v: unknown): v is Record<string, unknown> {
 	return typeof v === "object" && v !== null;
@@ -56,6 +56,57 @@ function logInvalid(reason: string, raw: RawPrEvent) {
 		prId: raw.pullrequest?.id ?? null,
 		repoUuid: raw.repository?.uuid ?? null,
 	});
+}
+
+/**
+ * Fetch diffstat from Bitbucket API to get modified files and line counts.
+ */
+async function fetchPrDiffStat(
+	workspaceUuid: string,
+	repoUuid: string,
+	prId: number
+): Promise<{ modifiedFiles: InternalFileMod[]; totalLinesAdded: number; totalLinesRemoved: number } | null> {
+	try {
+		const res = await asApp().requestBitbucket(
+			route`/2.0/repositories/${workspaceUuid}/${repoUuid}/pullrequests/${prId}/diffstat`
+		);
+
+		if (!res.ok) {
+			console.warn(`Failed to fetch PR diffstat: ${res.status} ${res.statusText}`);
+			return null;
+		}
+
+		const data = await res.json();
+		const values = Array.isArray(data.values) ? data.values : [];
+
+		const modifiedFiles: InternalFileMod[] = [];
+		let totalLinesAdded = 0;
+		let totalLinesRemoved = 0;
+
+		for (const v of values) {
+			const status = asString(v.status) ?? "unknown";
+			const linesAdded = asNumber(v.lines_added) ?? 0;
+			const linesRemoved = asNumber(v.lines_removed) ?? 0;
+			const path = asString(v.new?.path) ?? asString(v.old?.path) ?? "unknown";
+			const oldPath = asString(v.old?.path) ?? undefined;
+
+			totalLinesAdded += linesAdded;
+			totalLinesRemoved += linesRemoved;
+
+			modifiedFiles.push({
+				path,
+				status: status as any,
+				linesAdded,
+				linesRemoved,
+				oldPath: status === "renamed" ? oldPath : undefined,
+			});
+		}
+
+		return {modifiedFiles, totalLinesAdded, totalLinesRemoved};
+	} catch (err) {
+		console.error("Error fetching PR diffstat:", err);
+		return null;
+	}
 }
 
 /**
@@ -123,6 +174,14 @@ export async function parsePrEvent(rawUnknown: unknown): Promise<InternalPr | nu
 		}
 	}
 
+	let diffStats = {};
+	if (workspaceUuid && repoUuid && prId) {
+		const stats = await fetchPrDiffStat(workspaceUuid, repoUuid, prId);
+		if (stats) {
+			diffStats = stats;
+		}
+	}
+
 	return {
 		timestamp,
 		eventType: normalizeEventType(raw.eventType),
@@ -142,5 +201,6 @@ export async function parsePrEvent(rawUnknown: unknown): Promise<InternalPr | nu
 			? raw.permissions!.scopes!.filter((x): x is string => typeof x === "string")
 			: [],
 		selfGenerated: raw.selfGenerated === true,
+		...diffStats,
 	};
 }

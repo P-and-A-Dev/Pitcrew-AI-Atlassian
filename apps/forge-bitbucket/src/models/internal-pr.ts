@@ -32,4 +32,16 @@ export type InternalPr = {
 
 	scopes: string[];
 	selfGenerated: boolean;
+
+	modifiedFiles?: InternalFileMod[];
+	totalLinesAdded?: number;
+	totalLinesRemoved?: number;
+};
+
+export type InternalFileMod = {
+	path: string;
+	status: "added" | "modified" | "removed" | "renamed" | "unknown";
+	linesAdded: number;
+	linesRemoved: number;
+	oldPath?: string;
 };
