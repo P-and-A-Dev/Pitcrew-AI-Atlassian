@@ -1,6 +1,7 @@
 import { fetchPrDiffStat, parsePrEvent } from "./pr-event/pr-event.mapper";
 import { diffAnalyzerService } from "./services/diff-analyzer.service";
 import { processAnalyzerService } from "./services/process-analyzer.service";
+import { riskScoringService } from "./services/risk-scoring.service";
 import { storageService } from "./services/storage.service";
 
 export async function onPullRequestEvent(e: any, _: any) {
@@ -50,7 +51,16 @@ export async function onPullRequestEvent(e: any, _: any) {
 				console.warn(`⚠️ PR #${pr.prId} created during off-hours (Weekend: ${timing.isWeekend}, Late: ${timing.isLate})`);
 			}
 
+			const risk = riskScoringService.calculateRisk(pr);
+			pr.riskScore = risk.score;
+			pr.riskColor = risk.color;
+			pr.riskFactors = risk.factors;
+
 			console.log(`✅ Diff fetched & Analyzed: ${pr.modifiedFiles.length} files. Critical: ${metrics.criticalFilesCount}, Tests: ${metrics.testFilesCount}, Size: ${size}`);
+			console.log(`🎯 Risk Score: ${pr.riskScore} (${pr.riskColor})`);
+			if (pr.riskFactors.length > 0) {
+				console.log(`   Factors: ${pr.riskFactors.join(", ")}`);
+			}
 		}
 	}
 
