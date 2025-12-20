@@ -193,5 +193,8 @@ export async function parsePrEvent(rawUnknown: unknown): Promise<InternalPr | nu
 			? raw.permissions!.scopes!.filter((x): x is string => typeof x === "string")
 			: [],
 		selfGenerated: raw.selfGenerated === true,
+		reviewers: Array.isArray((raw.pullrequest as any)?.reviewers)
+			? (raw.pullrequest as any).reviewers.map((r: any) => asString(r.accountId)).filter((x: any): x is string => !!x)
+			: []
 	};
 }

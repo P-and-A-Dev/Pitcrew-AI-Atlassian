@@ -38,12 +38,16 @@ export type InternalPr = {
 	totalLinesRemoved?: number;
 
 	analysisMetrics?: PrAnalysisMetrics;
+
+	// Process & Timing
+	reviewers?: string[]; // List of accountIds
+	sizeCategory?: "very_small" | "small" | "medium" | "large" | "unknown";
 };
 
 export type PrAnalysisMetrics = {
 	criticalFilesCount: number;
 	testFilesCount: number;
-	criticalPaths: string[];
+	criticalPaths: string[]; // e.g. ["auth", "payments"]
 };
 
 export type InternalFileMod = {

@@ -1,5 +1,6 @@
 import { fetchPrDiffStat, parsePrEvent } from "./pr-event/pr-event.mapper";
 import { diffAnalyzerService } from "./services/diff-analyzer.service";
+import { processAnalyzerService } from "./services/process-analyzer.service";
 import { storageService } from "./services/storage.service";
 
 export async function onPullRequestEvent(e: any, _: any) {
@@ -34,7 +35,22 @@ export async function onPullRequestEvent(e: any, _: any) {
 			const metrics = diffAnalyzerService.analyzeFiles(pr.modifiedFiles);
 			pr.analysisMetrics = metrics;
 
-			console.log(`✅ Diff fetched & Analyzed: ${pr.modifiedFiles.length} files. Critical: ${metrics.criticalFilesCount}, Tests: ${metrics.testFilesCount}`);
+			const size = processAnalyzerService.determineSizeCategory(pr.totalLinesAdded, pr.totalLinesRemoved);
+			pr.sizeCategory = size;
+
+			if (pr.reviewers) {
+				const reviewerStatus = processAnalyzerService.checkReviewers(pr.reviewers);
+				if (!reviewerStatus.hasReviewers) {
+					console.warn(`⚠️ PR #${pr.prId} has NO reviewers!`);
+				}
+			}
+
+			const timing = processAnalyzerService.analyzeTiming(pr.timestamp);
+			if (timing.isLate || timing.isWeekend) {
+				console.warn(`⚠️ PR #${pr.prId} created during off-hours (Weekend: ${timing.isWeekend}, Late: ${timing.isLate})`);
+			}
+
+			console.log(`✅ Diff fetched & Analyzed: ${pr.modifiedFiles.length} files. Critical: ${metrics.criticalFilesCount}, Tests: ${metrics.testFilesCount}, Size: ${size}`);
 		}
 	}
 
