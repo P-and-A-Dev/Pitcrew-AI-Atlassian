@@ -61,7 +61,7 @@ function logInvalid(reason: string, raw: RawPrEvent) {
 /**
  * Fetch diffstat from Bitbucket API to get modified files and line counts.
  */
-async function fetchPrDiffStat(
+export async function fetchPrDiffStat(
 	workspaceUuid: string,
 	repoUuid: string,
 	prId: number
@@ -174,14 +174,6 @@ export async function parsePrEvent(rawUnknown: unknown): Promise<InternalPr | nu
 		}
 	}
 
-	let diffStats = {};
-	if (workspaceUuid && repoUuid && prId) {
-		const stats = await fetchPrDiffStat(workspaceUuid, repoUuid, prId);
-		if (stats) {
-			diffStats = stats;
-		}
-	}
-
 	return {
 		timestamp,
 		eventType: normalizeEventType(raw.eventType),
@@ -201,6 +193,5 @@ export async function parsePrEvent(rawUnknown: unknown): Promise<InternalPr | nu
 			? raw.permissions!.scopes!.filter((x): x is string => typeof x === "string")
 			: [],
 		selfGenerated: raw.selfGenerated === true,
-		...diffStats,
 	};
 }
