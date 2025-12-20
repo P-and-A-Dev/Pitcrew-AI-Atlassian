@@ -51,6 +51,10 @@ export type PrAnalysisMetrics = {
 	criticalFilesCount: number;
 	testFilesCount: number;
 	criticalPaths: string[];
+	docFilesCount: number;
+	generatedFilesCount: number;
+	renameOnlyFilesCount: number;
+	regularCodeFilesCount: number;
 };
 
 export type InternalFileMod = {
