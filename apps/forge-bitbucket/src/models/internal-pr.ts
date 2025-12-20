@@ -36,6 +36,14 @@ export type InternalPr = {
 	modifiedFiles?: InternalFileMod[];
 	totalLinesAdded?: number;
 	totalLinesRemoved?: number;
+
+	analysisMetrics?: PrAnalysisMetrics;
+};
+
+export type PrAnalysisMetrics = {
+	criticalFilesCount: number;
+	testFilesCount: number;
+	criticalPaths: string[];
 };
 
 export type InternalFileMod = {

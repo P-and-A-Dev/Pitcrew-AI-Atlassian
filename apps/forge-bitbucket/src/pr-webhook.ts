@@ -1,4 +1,5 @@
 import { fetchPrDiffStat, parsePrEvent } from "./pr-event/pr-event.mapper";
+import { diffAnalyzerService } from "./services/diff-analyzer.service";
 import { storageService } from "./services/storage.service";
 
 export async function onPullRequestEvent(e: any, _: any) {
@@ -29,6 +30,11 @@ export async function onPullRequestEvent(e: any, _: any) {
 			pr.modifiedFiles = stats.modifiedFiles;
 			pr.totalLinesAdded = stats.totalLinesAdded;
 			pr.totalLinesRemoved = stats.totalLinesRemoved;
+
+			const metrics = diffAnalyzerService.analyzeFiles(pr.modifiedFiles);
+			pr.analysisMetrics = metrics;
+
+			console.log(`✅ Diff fetched & Analyzed: ${pr.modifiedFiles.length} files. Critical: ${metrics.criticalFilesCount}, Tests: ${metrics.testFilesCount}`);
 		}
 	}
 
