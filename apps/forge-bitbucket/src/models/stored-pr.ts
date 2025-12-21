@@ -59,6 +59,11 @@ export interface StoredPullRequest {
     metrics: {
         ageHours: number;
     };
+
+    // PitCrew Comment Tracking
+    pitcrewCommentId?: string; // Bitbucket comment ID (stored as string to handle 64-bit IDs)
+    pitcrewCommentFingerprint?: string; // SHA256 hash to detect material changes
+    pitcrewCommentLastPostedAt?: string; // ISO timestamp of last comment interaction
 }
 
 /**

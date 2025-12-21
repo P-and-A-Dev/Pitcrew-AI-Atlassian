@@ -4,6 +4,8 @@ import { processAnalyzerService } from "./services/process-analyzer.service";
 import { riskScoringService } from "./services/risk-scoring.service";
 import { storageService } from "./services/storage.service";
 import { prStorageService } from "./services/pr-storage.service";
+import { bitbucketCommentsService } from "./services/bitbucket-comments.service";
+import { buildPitCrewComment, computeCommentFingerprint } from "./templates/pitcrew-comment.template";
 
 export async function onPullRequestEvent(e: any, _: any) {
 	const pr = await parsePrEvent(e);
@@ -88,6 +90,61 @@ export async function onPullRequestEvent(e: any, _: any) {
 		lastSourceCommitHash: pr.sourceCommitHash,
 		lastAnalyzedAt: new Date().toISOString()
 	});
+
+	if (pr.workspaceUuid && pr.repoUuid && pr.riskScore !== undefined) {
+		const existingPr = await prStorageService.getPullRequest(pr.workspaceUuid, pr.repoUuid, pr.prId);
+
+		const commentMarkdown = buildPitCrewComment(pr);
+		const newFingerprint = computeCommentFingerprint(pr);
+
+		let commentId: string | undefined = existingPr?.pitcrewCommentId;
+		let shouldPostComment = false;
+
+		if (existingPr?.pitcrewCommentFingerprint === newFingerprint) {
+			console.log(`💬 [COMMENT] Skip comment update, fingerprint unchanged for PR #${pr.prId}`);
+		} else if (commentId) {
+			const updateResult = await bitbucketCommentsService.updatePullRequestComment(
+				pr.workspaceUuid,
+				pr.repoUuid,
+				pr.prId,
+				commentId,
+				commentMarkdown
+			);
+
+			if (updateResult === false) {
+				console.log(`⚠️ [COMMENT] Update failed (404), falling back to create new comment on PR #${pr.prId}`);
+				const createResult = await bitbucketCommentsService.createPullRequestComment(
+					pr.workspaceUuid,
+					pr.repoUuid,
+					pr.prId,
+					commentMarkdown
+				);
+				if (createResult) {
+					commentId = createResult.id;
+					shouldPostComment = true;
+				}
+			} else if (updateResult === true) {
+				shouldPostComment = true;
+			}
+		} else {
+			const createResult = await bitbucketCommentsService.createPullRequestComment(
+				pr.workspaceUuid,
+				pr.repoUuid,
+				pr.prId,
+				commentMarkdown
+			);
+			if (createResult) {
+				commentId = createResult.id;
+				shouldPostComment = true;
+			}
+		}
+
+		if (shouldPostComment && commentId) {
+			(pr as any).pitcrewCommentId = commentId;
+			(pr as any).pitcrewCommentFingerprint = newFingerprint;
+			(pr as any).pitcrewCommentLastPostedAt = new Date().toISOString();
+		}
+	}
 
 	await prStorageService.saveOrUpdatePullRequest(pr);
 

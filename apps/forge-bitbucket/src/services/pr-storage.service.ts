@@ -82,6 +82,11 @@ export class PrStorageService {
 			metrics: {
 				ageHours,
 			},
+
+			// PitCrew Comment Tracking (preserve from existing or use new values)
+			pitcrewCommentId: (pr as any).pitcrewCommentId || existing?.pitcrewCommentId,
+			pitcrewCommentFingerprint: (pr as any).pitcrewCommentFingerprint || existing?.pitcrewCommentFingerprint,
+			pitcrewCommentLastPostedAt: (pr as any).pitcrewCommentLastPostedAt || existing?.pitcrewCommentLastPostedAt,
 		};
 
 		await storage.set(prKey, storedPr);
@@ -137,7 +142,7 @@ export class PrStorageService {
 	 * Update all relevant indexes for a PR
 	 */
 	private async updateIndexes(pr: StoredPullRequest, existing: StoredPullRequest | null): Promise<void> {
-		const {workspaceUuid, repoUuid, state, risk} = pr;
+		const { workspaceUuid, repoUuid, state, risk } = pr;
 		const prKey = pr.key;
 
 		await this.addToIndex(buildIndexKey("byRepo", workspaceUuid, repoUuid), prKey);
@@ -167,7 +172,7 @@ export class PrStorageService {
 	 * Remove PR from all indexes (used on delete)
 	 */
 	private async removeFromAllIndexes(pr: StoredPullRequest): Promise<void> {
-		const {workspaceUuid, repoUuid, risk} = pr;
+		const { workspaceUuid, repoUuid, risk } = pr;
 		const prKey = pr.key;
 
 		await this.removeFromIndex(buildIndexKey("byRepo", workspaceUuid, repoUuid), prKey);
@@ -231,7 +236,7 @@ export class PrStorageService {
 			};
 		} catch (error) {
 			console.error(`❌ [STORAGE] Failed to get telemetry counts`, error);
-			return {total: 0, open: 0, red: 0, yellow: 0, green: 0};
+			return { total: 0, open: 0, red: 0, yellow: 0, green: 0 };
 		}
 	}
 
