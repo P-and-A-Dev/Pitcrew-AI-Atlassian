@@ -5,7 +5,7 @@ export function TelemetryView() {
 
     if (loading) {
         return (
-            <div className="text-sm text-white/60">
+            <div className="text-sm text-williams-muted">
                 Loading telemetry…
             </div>
         );
@@ -13,7 +13,7 @@ export function TelemetryView() {
 
     if (error) {
         return (
-            <div className="text-sm text-red-400">
+            <div className="text-sm text-williams-danger">
                 Telemetry error: {error}
             </div>
         );
@@ -21,20 +21,35 @@ export function TelemetryView() {
 
     if (data.length === 0) {
         return (
-            <div className="text-sm text-white/50">
+            <div className="text-sm text-williams-muted">
                 No telemetry data available
             </div>
         );
     }
 
     return (
-        <div className="space-y-2">
+        <div className="space-y-3">
             {data.map(pr => (
                 <div
                     key={pr.id}
-                    className="rounded-md bg-[#11162A] p-3"
+                    className="
+                        rounded-lg
+                        bg-williams-surface
+                        border border-white/5
+                        p-4
+                        transition-all
+                        duration-150
+                        ease-out
+                        hover:shadow-lg
+                        hover:shadow-black/30
+                        hover:-translate-y-0.5
+                    "
                 >
-                    {pr.title}
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-williams-text">
+                            {pr.title}
+                        </span>
+                    </div>
                 </div>
             ))}
         </div>
