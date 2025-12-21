@@ -12,7 +12,7 @@ export function PRTelemetryView() {
     if (loading) {
         return (
             <div className="rounded-lg bg-[#0F1629] p-4 opacity-60">
-                Loading PR telemetry…
+                Cars are entering the pit lane…
             </div>
         );
     }
@@ -20,7 +20,7 @@ export function PRTelemetryView() {
     if (error) {
         return (
             <div className="rounded-lg bg-[#0F1629] p-4 text-red-400">
-                {error}
+                Telemetry lost. Unable to receive race data.
             </div>
         );
     }
@@ -31,6 +31,7 @@ export function PRTelemetryView() {
             <div className="lg:col-span-1">
                 <PRList
                     prs={data}
+                    selectedPRId={selectedPR?.id}
                     onSelect={setSelectedPR}
                 />
             </div>
@@ -41,7 +42,7 @@ export function PRTelemetryView() {
                     <PRTelemetryPanel pr={selectedPR} />
                 ) : (
                     <div className="opacity-50">
-                        Select a PR to view telemetry
+                        Select a car to inspect telemetry
                     </div>
                 )}
             </div>

@@ -10,10 +10,18 @@ import { useDashboardKpis } from "./hooks/useDashboardKpis";
 import { FlagsView } from "./views/FlagsView";
 import { SprintRaceView } from "./views/SprintRaceView";
 import { PRTelemetryView } from "./views/PRTelemetryView";
+import { TeamLoadView } from "./views/TeamLoadView";
 
 import { RiskDistributionChart } from "./Components/RiskDistributionChart";
+import { TelemetryFeed } from "./Components/telemetry/TelemetryFeed";
+import { FlagsSummary } from "./Components/flags/FlagsSummary";
 
-type View = "dashboard" | "pr-telemetry" | "flags" | "sprint";
+type View =
+    | "dashboard"
+    | "pr-telemetry"
+    | "flags"
+    | "sprint"
+    | "team-load";
 
 export default function App() {
     const [view, setView] = useState<View>("dashboard");
@@ -26,7 +34,7 @@ export default function App() {
                 <GlobalHeader />
 
                 {/* ===== TOP NAV (DEV / HACKATHON) ===== */}
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                     <button
                         onClick={() => setView("dashboard")}
                         className={`px-3 py-1 rounded text-sm ${
@@ -47,6 +55,17 @@ export default function App() {
                         }`}
                     >
                         PR Telemetry
+                    </button>
+
+                    <button
+                        onClick={() => setView("team-load")}
+                        className={`px-3 py-1 rounded text-sm ${
+                            view === "team-load"
+                                ? "bg-blue-600"
+                                : "bg-gray-700 hover:bg-gray-600"
+                        }`}
+                    >
+                        Team Load
                     </button>
 
                     <button
@@ -72,27 +91,35 @@ export default function App() {
                     </button>
                 </div>
 
-                {/* ===== DASHBOARD HOME ===== */}
+                {/* ================= DASHBOARD HOME ================= */}
                 {view === "dashboard" && (
                     <>
+                        {/* KPIs */}
                         {kpis && (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                                <KpiCard label="Open PRs" value={kpis.openPRs} />
+                                <KpiCard
+                                    label="Open PRs"
+                                    value={kpis.openPRs}
+                                />
+
                                 <KpiCard
                                     label="Risky PRs"
                                     value={kpis.riskyPRs}
                                     severity="critical"
                                 />
+
                                 <KpiCard
                                     label="Avg PR Size"
                                     value={kpis.avgPrSize}
                                     hint="lines changed"
                                 />
+
                                 <KpiCard
                                     label="PRs Without Tests"
                                     value={kpis.prsWithoutTests}
                                     severity="warning"
                                 />
+
                                 <KpiCard
                                     label="Critical Files"
                                     value={kpis.criticalFilesTouched}
@@ -101,6 +128,15 @@ export default function App() {
                             </div>
                         )}
 
+                        {/* Live Telemetry */}
+                        <TelemetryFeed />
+
+                        {/* Flags Summary */}
+                        <FlagsSummary
+                            onOpenFlags={() => setView("flags")}
+                        />
+
+                        {/* Extra visual */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                             <div className="lg:col-span-1">
                                 <RiskDistributionChart />
@@ -109,13 +145,16 @@ export default function App() {
                     </>
                 )}
 
-                {/* ===== PR TELEMETRY ===== */}
+                {/* ================= PR TELEMETRY ================= */}
                 {view === "pr-telemetry" && <PRTelemetryView />}
 
-                {/* ===== FLAGS ===== */}
+                {/* ================= TEAM LOAD ================= */}
+                {view === "team-load" && <TeamLoadView />}
+
+                {/* ================= FLAGS ================= */}
                 {view === "flags" && <FlagsView />}
 
-                {/* ===== SPRINT ===== */}
+                {/* ================= SPRINT ================= */}
                 {view === "sprint" && <SprintRaceView />}
             </div>
         </DashboardLayout>
