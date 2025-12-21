@@ -11,9 +11,11 @@ export class StorageService {
 	/**
 	 * Creates a composite key using repoUuid and prId to prevent collisions
 	 * across different repositories that may have the same PR numbers.
+	 * Sanitizes UUIDs to remove curly braces (not allowed in Forge storage keys).
 	 */
 	private getPrKey(repoUuid: string, prId: number): string {
-		return `${PR_ANALYSIS_PREFIX}:${repoUuid}:${prId}`;
+		const sanitizedRepoUuid = repoUuid.replace(/[{}]/g, '');
+		return `${PR_ANALYSIS_PREFIX}:${sanitizedRepoUuid}:${prId}`;
 	}
 
 	async getPrAnalysisState(repoUuid: string, prId: number): Promise<PrAnalysisState | undefined> {

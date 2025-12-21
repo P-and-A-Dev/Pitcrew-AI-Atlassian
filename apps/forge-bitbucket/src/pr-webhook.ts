@@ -3,6 +3,7 @@ import { diffAnalyzerService } from "./services/diff-analyzer.service";
 import { processAnalyzerService } from "./services/process-analyzer.service";
 import { riskScoringService } from "./services/risk-scoring.service";
 import { storageService } from "./services/storage.service";
+import { prStorageService } from "./services/pr-storage.service";
 
 export async function onPullRequestEvent(e: any, _: any) {
 	const pr = await parsePrEvent(e);
@@ -15,6 +16,9 @@ export async function onPullRequestEvent(e: any, _: any) {
 	if (pr.eventType === "avi:bitbucket:fulfilled:pullrequest" || pr.eventType === "avi:bitbucket:rejected:pullrequest") {
 		await storageService.deletePrAnalysisState(pr.repoUuid, pr.prId);
 		console.log(`🏁 PR #${pr.prId} closed (${pr.state}). Storage cleaned up.`);
+
+		await prStorageService.saveOrUpdatePullRequest(pr);
+
 		return true;
 	}
 
@@ -74,6 +78,8 @@ export async function onPullRequestEvent(e: any, _: any) {
 		lastSourceCommitHash: pr.sourceCommitHash,
 		lastAnalyzedAt: new Date().toISOString()
 	});
+
+	await prStorageService.saveOrUpdatePullRequest(pr);
 
 	console.log(JSON.stringify(pr, null, 2));
 

@@ -13,9 +13,6 @@ export class RiskScoringService {
 	calculateRisk(pr: InternalPr): { score: number; color: "green" | "yellow" | "red"; factors: string[] } {
 		const factors: string[] = [];
 
-		// ═══════════════════════════════════════════════════════════
-		// 1. Special Cases Detection
-		// ═══════════════════════════════════════════════════════════
 		const totalFiles = pr.modifiedFiles?.length ?? 0;
 		const metrics = pr.analysisMetrics;
 
@@ -45,9 +42,6 @@ export class RiskScoringService {
 			factors.push(`Tests-only PR (+${testsOnlyBonus} bonus)`);
 		}
 
-		// ═══════════════════════════════════════════════════════════
-		// 2. Normalized Metrics (0-1 range)
-		// ═══════════════════════════════════════════════════════════
 		const effectiveFileCount =
 			metrics.regularCodeFilesCount +
 			metrics.testFilesCount +
@@ -63,9 +57,6 @@ export class RiskScoringService {
 
 		const linesScore = Math.min(totalLinesChanged / NORMALIZATION.MAX_LINES_FOR_NORMALIZATION, 1);
 
-		// ═══════════════════════════════════════════════════════════
-		// 3. Other Signals Score (reviewers, critical files, tests, timing)
-		// ═══════════════════════════════════════════════════════════
 		let signalsScore = 0;
 
 		if (!pr.reviewers || pr.reviewers.length === 0) {
@@ -99,9 +90,6 @@ export class RiskScoringService {
 
 		signalsScore = Math.min(signalsScore, 1);
 
-		// ═══════════════════════════════════════════════════════════
-		// 4. Weighted Risk Score Calculation
-		// ═══════════════════════════════════════════════════════════
 		const riskScore =
 			(filesScore * SCORING_WEIGHTS.FILES_WEIGHT) +
 			(linesScore * SCORING_WEIGHTS.LINES_WEIGHT) +
@@ -115,9 +103,6 @@ export class RiskScoringService {
 		factors.push(`Lines: ${totalLinesChanged} (score: ${(linesScore * 100).toFixed(0)}%)`);
 		factors.push(`Signals: (score: ${(signalsScore * 100).toFixed(0)}%)`);
 
-		// ═══════════════════════════════════════════════════════════
-		// 5. Color Classification
-		// ═══════════════════════════════════════════════════════════
 		let color: "green" | "yellow" | "red" = "green";
 		if (score < RISK_THRESHOLDS.RED_BELOW) {
 			color = "red";
