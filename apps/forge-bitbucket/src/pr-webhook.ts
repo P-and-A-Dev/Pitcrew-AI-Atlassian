@@ -58,7 +58,17 @@ export async function onPullRequestEvent(e: any, _: any) {
 
 			const timing = processAnalyzerService.analyzeTiming(pr.timestamp);
 			if (timing.isLate || timing.isWeekend) {
-				console.warn(`⚠️ PR #${pr.prId} created during off-hours (Weekend: ${timing.isWeekend}, Late: ${timing.isLate})`);
+				let activityType = "activity";
+
+				if (pr.eventType.includes("created")) {
+					activityType = "created";
+				} else if (pr.eventType.includes("updated")) {
+					activityType = "updated";
+				} else if (pr.eventType.includes("fulfilled")) {
+					activityType = "merged";
+				}
+
+				console.warn(`⚠️ PR #${pr.prId} ${activityType} during off-hours (Weekend: ${timing.isWeekend}, Late: ${timing.isLate}, UTC Hour: ${timing.utcHour}, UTC Day: ${timing.utcDay})`);
 			}
 
 			const risk = riskScoringService.calculateRisk(pr);

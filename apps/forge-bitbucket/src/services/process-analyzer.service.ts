@@ -24,18 +24,17 @@ export class ProcessAnalyzerService {
 	 * Proxy for "Sprint Timing" analysis.
 	 * Checks if PR is submitted during weekend or late hours (risk proxy).
 	 */
-	analyzeTiming(eventTimestamp: string): { isLate: boolean; isWeekend: boolean } {
+	analyzeTiming(eventTimestamp: string): { isLate: boolean; isWeekend: boolean; utcHour: number; utcDay: number } {
 		const date = new Date(eventTimestamp);
-		const day = date.getUTCDay();
-		const hour = date.getUTCHours();
+		const utcDay = date.getUTCDay();
+		const utcHour = date.getUTCHours();
 
 		// 0 = Sunday, 6 = Saturday
-		const isWeekend = day === 0 || day === 6;
+		const isWeekend = utcDay === 0 || utcDay === 6;
 
-		// Late hours based on configured thresholds
-		const isLate = hour >= TIMING_THRESHOLDS.LATE_START_HOUR || hour < TIMING_THRESHOLDS.LATE_END_HOUR;
+		const isLate = utcHour >= TIMING_THRESHOLDS.LATE_START_HOUR || utcHour < TIMING_THRESHOLDS.LATE_END_HOUR;
 
-		return {isLate, isWeekend};
+		return { isLate, isWeekend, utcHour, utcDay };
 	}
 }
 
