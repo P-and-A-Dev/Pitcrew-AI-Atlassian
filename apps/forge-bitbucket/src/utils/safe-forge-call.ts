@@ -9,6 +9,7 @@
  */
 
 import { RETRY_CONFIG, RETRYABLE_STATUS_CODES } from '../config/retry.config';
+import { createLogger } from './logger';
 
 export interface SafeForgeCallOptions {
 	/** Maximum number of retry attempts (default: 3) */
@@ -38,7 +39,7 @@ export function sleep(ms: number): Promise<void> {
  * @returns Delay in milliseconds with jitter applied
  */
 export function calculateBackoff(attempt: number): number {
-	const {INITIAL_BACKOFF_MS, MAX_BACKOFF_MS, BACKOFF_MULTIPLIER, JITTER_FACTOR} = RETRY_CONFIG;
+	const { INITIAL_BACKOFF_MS, MAX_BACKOFF_MS, BACKOFF_MULTIPLIER, JITTER_FACTOR } = RETRY_CONFIG;
 
 	// Exponential backoff
 	const exponential = INITIAL_BACKOFF_MS * Math.pow(BACKOFF_MULTIPLIER, attempt);
@@ -127,6 +128,7 @@ export async function safeForgeCall<T>(
 		context = 'unknownCall',
 	} = options;
 
+	const logger = createLogger({ component: 'safeForgeCall', context });
 	let lastError: any;
 
 	for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -143,7 +145,11 @@ export async function safeForgeCall<T>(
 			clearTimeout(timeoutId);
 
 			if (attempt > 0) {
-				console.log(`✅ [RETRY] Attempt ${attempt + 1}/${maxRetries + 1} for ${context} succeeded`);
+				logger.info('Retry succeeded', {
+					event: 'retry_success',
+					attempt: attempt + 1,
+					maxRetries: maxRetries + 1,
+				});
 			}
 
 			return result;
@@ -160,8 +166,25 @@ export async function safeForgeCall<T>(
 
 			if (shouldRetry) {
 				const backoffMs = calculateBackoff(attempt);
+				logger.warn('Retry attempt failed, retrying', {
+					event: 'retry_attempt',
+					attempt: attempt + 1,
+					maxRetries: maxRetries + 1,
+					backoffMs,
+					errorMessage: getErrorMessage(error),
+				});
 				await sleep(backoffMs);
 			} else {
+				if (attempt >= maxRetries) {
+					logger.error('All retry attempts exhausted', lastError, {
+						event: 'retry_exhausted',
+						attempts: maxRetries + 1,
+					});
+				} else {
+					logger.error('Non-retryable error', error, {
+						event: 'non_retryable_error',
+					});
+				}
 				return null;
 			}
 		}

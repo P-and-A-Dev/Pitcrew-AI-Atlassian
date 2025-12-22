@@ -3,6 +3,8 @@ import { RawPrEvent } from "../types/raw-pr-event";
 import { InternalFileMod, InternalPr, InternalPrEventType, InternalPrState } from "../models/internal-pr";
 import { validateWebhookPayload } from "../validation/schemas";
 import { safeForgeCall } from "../utils/safe-forge-call";
+import { diffCache } from "../utils/cache";
+import { createLogger } from "../utils/logger";
 
 function isObject(v: unknown): v is Record<string, unknown> {
 	return typeof v === "object" && v !== null;
@@ -68,6 +70,17 @@ export async function fetchPrDiffStat(
 	repoUuid: string,
 	prId: number
 ): Promise<{ modifiedFiles: InternalFileMod[]; totalLinesAdded: number; totalLinesRemoved: number } | null> {
+	const logger = createLogger({ prId, repoUuid, component: 'fetchPrDiffStat' });
+
+	// Check cache first (key: repo:prId)
+	const cacheKey = `diff:${repoUuid}:${prId}`;
+	const cached = diffCache.get(cacheKey);
+
+	if (cached) {
+		logger.info('Diff cache hit', { event: 'cache_hit', cacheKey });
+		return cached;
+	}
+
 	try {
 		const res = await safeForgeCall(
 			() => asApp().requestBitbucket(
@@ -77,12 +90,16 @@ export async function fetchPrDiffStat(
 		);
 
 		if (!res) {
-			console.warn(`safeForgeCall failed for fetchPrDiffStat after retries`);
+			logger.warn('safeForgeCall failed after retries', { event: 'fetch_failed' });
 			return null;
 		}
 
 		if (!res.ok) {
-			console.warn(`Failed to fetch PR diffstat: ${res.status} ${res.statusText}`);
+			logger.warn('Failed to fetch diffstat', {
+				event: 'fetch_error',
+				status: res.status,
+				statusText: res.statusText,
+			});
 			return null;
 		}
 
@@ -112,9 +129,19 @@ export async function fetchPrDiffStat(
 			});
 		}
 
-		return { modifiedFiles, totalLinesAdded, totalLinesRemoved };
+		const result = { modifiedFiles, totalLinesAdded, totalLinesRemoved };
+
+		// Cache for 5 minutes
+		diffCache.set(cacheKey, result, 300000);
+		logger.info('Diff fetched and cached', {
+			event: 'cache_miss',
+			cacheKey,
+			filesCount: modifiedFiles.length,
+		});
+
+		return result;
 	} catch (err) {
-		console.error("Error fetching PR diffstat:", err);
+		logger.error('Error fetching diffstat', err, { event: 'fetch_exception' });
 		return null;
 	}
 }
