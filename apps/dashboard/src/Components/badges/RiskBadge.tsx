@@ -1,8 +1,21 @@
-interface RiskBadgeProps {
-    score: number;
-}
+type RiskBadgeProps =
+    | { score: number }
+    | { level: "low" | "medium" | "high" };
 
-function getRiskConfig(score: number) {
+function getRiskConfig(scoreOrLevel: number | "low" | "medium" | "high") {
+    let score: number;
+
+    if (typeof scoreOrLevel === "string") {
+        const levelMap = {
+            high: 75,
+            medium: 50,
+            low: 25,
+        };
+        score = levelMap[scoreOrLevel];
+    } else {
+        score = scoreOrLevel;
+    }
+
     if (score >= 70) {
         return {
             label: "High",
@@ -23,8 +36,9 @@ function getRiskConfig(score: number) {
     };
 }
 
-export function RiskBadge({ score }: RiskBadgeProps) {
-    const { label, className } = getRiskConfig(score);
+export function RiskBadge(props: RiskBadgeProps) {
+    const scoreOrLevel = "score" in props ? props.score : props.level;
+    const { label, className } = getRiskConfig(scoreOrLevel);
 
     return (
         <span

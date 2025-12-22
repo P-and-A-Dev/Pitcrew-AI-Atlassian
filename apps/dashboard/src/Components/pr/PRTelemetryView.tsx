@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { useTelemetry } from "../hooks/useTelemetry";
-import type { TelemetryPR } from "../hooks/useTelemetry";
+import { useTelemetry } from "../../hooks/useTelemetry";
+import type { TelemetryPR } from "../../hooks/useTelemetry";
 
-import { PRList } from "../Components/pr/PRList";
-import { PRTelemetryPanel } from "../Components/pr/PRTelemetryPanel";
+import { PRList } from "./PRList";
+import { PRTelemetryPanel } from "./PRTelemetryPanel";
 
 export function PRTelemetryView() {
     const { data, loading, error } = useTelemetry();

@@ -39,11 +39,7 @@ function EventLabel({
     );
 }
 
-export function PRTimeline({
-    prId,
-}: {
-    prId: string;
-}) {
+export function PRTimeline() {
 
     const events: TimelineEvent[] = [
         {
