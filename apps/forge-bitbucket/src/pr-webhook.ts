@@ -6,18 +6,32 @@ import { storageService } from "./services/storage.service";
 import { prStorageService } from "./services/pr-storage.service";
 import { bitbucketCommentsService } from "./services/bitbucket-comments.service";
 import { buildPitCrewComment, computeCommentFingerprint } from "./templates/pitcrew-comment.template";
+import { createLogger } from "./utils/logger";
 
 export async function onPullRequestEvent(e: any, _: any) {
 	const pr = await parsePrEvent(e);
 
 	if (!pr) {
-		console.error("Failed to parse PR event");
+		const logger = createLogger({ event: 'pr_webhook' });
+		logger.error('Failed to parse PR event');
 		return;
 	}
 
+	// Create logger with PR context
+	const logger = createLogger({
+		prId: pr.prId,
+		repoUuid: pr.repoUuid,
+		workspaceUuid: pr.workspaceUuid,
+		commitHash: pr.sourceCommitHash,
+	});
+
 	if (pr.eventType === "avi:bitbucket:fulfilled:pullrequest" || pr.eventType === "avi:bitbucket:rejected:pullrequest") {
 		await storageService.deletePrAnalysisState(pr.repoUuid, pr.prId);
-		console.log(`🏁 PR #${pr.prId} closed (${pr.state}). Storage cleaned up.`);
+		logger.info('PR closed, storage cleaned up', {
+			event: 'pr_closed',
+			state: pr.state,
+			eventType: pr.eventType,
+		});
 
 		await prStorageService.saveOrUpdatePullRequest(pr);
 
@@ -25,18 +39,27 @@ export async function onPullRequestEvent(e: any, _: any) {
 	}
 
 	if (!pr.sourceCommitHash) {
-		console.warn("Skipping analysis: No source commit hash found");
+		logger.warn('Skipping analysis: No source commit hash', {
+			event: 'skip_no_commit',
+		});
 		return;
 	}
 
 	const lastAnalysis = await storageService.getPrAnalysisState(pr.repoUuid, pr.prId);
 
 	if (lastAnalysis && lastAnalysis.lastSourceCommitHash === pr.sourceCommitHash) {
-		console.log(`ℹ️ [SMART GATING] Skipping analysis for PR #${pr.prId}: Source hash ${pr.sourceCommitHash} matches last analysis.`);
+		logger.info('Smart gating: Skipping analysis, commit unchanged', {
+			event: 'skip_smart_gating',
+			lastAnalyzed: lastAnalysis.lastSourceCommitHash,
+		});
 		return true;
 	}
 
-	console.log(`🚀 [ANALYSIS START] PR #${pr.prId} changed. Old: ${lastAnalysis?.lastSourceCommitHash ?? "none"} -> New: ${pr.sourceCommitHash}`);
+	logger.info('Analysis started', {
+		event: 'analysis_start',
+		oldCommit: lastAnalysis?.lastSourceCommitHash || 'none',
+		newCommit: pr.sourceCommitHash,
+	});
 
 	if (pr.workspaceUuid && pr.repoUuid) {
 		const stats = await fetchPrDiffStat(pr.workspaceUuid, pr.repoUuid, pr.prId);
