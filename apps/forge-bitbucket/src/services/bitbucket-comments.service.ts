@@ -1,4 +1,5 @@
 import { route, asApp } from "@forge/api";
+import { createLogger } from "../utils/logger";
 
 /**
  * Bitbucket Comments Service
@@ -21,8 +22,9 @@ export class BitbucketCommentsService {
         prId: number,
         content: string
     ): Promise<{ id: string } | null> {
+        const logger = createLogger({ prId, repoUuid: repoSlug, component: 'bitbucket-comments' });
         try {
-            console.log(`💬 [COMMENT] Creating new comment on PR #${prId}`);
+            logger.info('Creating comment', { event: 'comment_create_start' });
 
             const response = await asApp().requestBitbucket(
                 route`/2.0/repositories/${workspace}/${repoSlug}/pullrequests/${prId}/comments`,
@@ -40,19 +42,24 @@ export class BitbucketCommentsService {
             );
 
             if (!response.ok) {
-                console.error(
-                    `❌ [COMMENT] Failed to create comment on PR #${prId}: ${response.status} ${response.statusText}`
-                );
+                logger.error('Failed to create comment', null, {
+                    event: 'comment_create_failed',
+                    status: response.status,
+                    statusText: response.statusText,
+                });
                 return null;
             }
 
             const data = await response.json();
             const commentId = String(data.id);
 
-            console.log(`✅ [COMMENT] Successfully created comment ${commentId} on PR #${prId}`);
+            logger.info('Comment created successfully', {
+                event: 'comment_created',
+                commentId,
+            });
             return { id: commentId };
         } catch (error) {
-            console.error(`❌ [COMMENT] Error creating comment on PR #${prId}:`, error);
+            logger.error('Error creating comment', error, { event: 'comment_create_exception' });
             return null;
         }
     }
@@ -75,8 +82,9 @@ export class BitbucketCommentsService {
         commentId: string,
         content: string
     ): Promise<boolean | null> {
+        const logger = createLogger({ prId, repoUuid: repoSlug, component: 'bitbucket-comments' });
         try {
-            console.log(`💬 [COMMENT] Updating existing comment ${commentId} on PR #${prId}`);
+            logger.info('Updating comment', { event: 'comment_update_start', commentId });
 
             const response = await asApp().requestBitbucket(
                 route`/2.0/repositories/${workspace}/${repoSlug}/pullrequests/${prId}/comments/${commentId}`,
@@ -94,23 +102,33 @@ export class BitbucketCommentsService {
             );
 
             if (response.status === 404) {
-                console.warn(
-                    `⚠️ [COMMENT] Comment ${commentId} not found (404) on PR #${prId}, likely deleted manually`
-                );
+                logger.warn('Comment not found (likely deleted)', {
+                    event: 'comment_not_found',
+                    commentId,
+                });
                 return false;
             }
 
             if (!response.ok) {
-                console.error(
-                    `❌ [COMMENT] Failed to update comment ${commentId} on PR #${prId}: ${response.status} ${response.statusText}`
-                );
+                logger.error('Failed to update comment', null, {
+                    event: 'comment_update_failed',
+                    commentId,
+                    status: response.status,
+                    statusText: response.statusText,
+                });
                 return null;
             }
 
-            console.log(`✅ [COMMENT] Successfully updated comment ${commentId} on PR #${prId}`);
+            logger.info('Comment updated successfully', {
+                event: 'comment_updated',
+                commentId,
+            });
             return true;
         } catch (error) {
-            console.error(`❌ [COMMENT] Error updating comment ${commentId} on PR #${prId}:`, error);
+            logger.error('Error updating comment', error, {
+                event: 'comment_update_exception',
+                commentId,
+            });
             return null;
         }
     }
