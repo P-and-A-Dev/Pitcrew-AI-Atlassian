@@ -1,6 +1,7 @@
 import { route, asApp } from "@forge/api";
 import { RawPrEvent } from "../types/raw-pr-event";
 import { InternalFileMod, InternalPr, InternalPrEventType, InternalPrState } from "../models/internal-pr";
+import { validateWebhookPayload } from "../validation/schemas";
 
 function isObject(v: unknown): v is Record<string, unknown> {
 	return typeof v === "object" && v !== null;
@@ -102,7 +103,7 @@ export async function fetchPrDiffStat(
 			});
 		}
 
-		return {modifiedFiles, totalLinesAdded, totalLinesRemoved};
+		return { modifiedFiles, totalLinesAdded, totalLinesRemoved };
 	} catch (err) {
 		console.error("Error fetching PR diffstat:", err);
 		return null;
@@ -114,12 +115,18 @@ export async function fetchPrDiffStat(
  * Return null if invalid (and log the error).
  */
 export async function parsePrEvent(rawUnknown: unknown): Promise<InternalPr | null> {
-	if (!isObject(rawUnknown)) {
-		console.error("Invalid Bitbucket PR event: payload is not an object");
+	// ============================================================
+	// STEP 1: Validate payload with Zod BEFORE any processing
+	// ============================================================
+	const validationResult = validateWebhookPayload(rawUnknown);
+
+	if (!validationResult.success) {
+		console.error("🚫 [VALIDATION] Webhook rejected due to validation failure");
 		return null;
 	}
 
-	const raw = rawUnknown as RawPrEvent;
+	// Type-safe after validation
+	const raw = validationResult.data as any as RawPrEvent;
 
 	const prId = asNumber(raw.pullrequest?.id);
 	if (prId === null) {

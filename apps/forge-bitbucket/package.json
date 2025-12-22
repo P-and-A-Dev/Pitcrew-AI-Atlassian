@@ -12,7 +12,8 @@
     "test:coverage": "jest --coverage"
   },
   "dependencies": {
-    "@forge/api": "^6.4.2"
+    "@forge/api": "^6.4.2",
+    "zod": "^3.22.4"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
