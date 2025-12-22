@@ -1,6 +1,7 @@
 import { storage } from "@forge/api";
 import { StoredPullRequest, buildPrKey, buildIndexKey, RiskColor, PrState } from "../models/stored-pr";
 import { InternalPr } from "../models/internal-pr";
+import { createLogger } from "../utils/logger";
 
 /**
  * PR Storage Service
@@ -13,9 +14,8 @@ export class PrStorageService {
 	 * Handles index updates automatically
 	 */
 	async saveOrUpdatePullRequest(pr: InternalPr): Promise<void> {
+		const logger = createLogger({ prId: pr.prId, repoUuid: pr.repoUuid, component: 'pr-storage' });
 		const prKey = buildPrKey(pr.workspaceUuid || "", pr.repoUuid, pr.prId);
-
-		console.log(`💾 [STORAGE] Saving PR ${prKey}`);
 
 		const existing = await this.getPullRequest(pr.workspaceUuid || "", pr.repoUuid, pr.prId);
 
@@ -93,7 +93,13 @@ export class PrStorageService {
 
 		await this.updateIndexes(storedPr, existing);
 
-		console.log(`✅ [STORAGE] Saved PR ${prKey} | State: ${state} | Risk: ${risk.color} (${risk.score})`);
+		logger.info('PR saved successfully', {
+			event: 'pr_saved',
+			key: prKey,
+			state,
+			riskColor: risk.color,
+			riskScore: risk.score,
+		});
 	}
 
 	/**
@@ -105,7 +111,8 @@ export class PrStorageService {
 			const pr = await storage.get(prKey);
 			return pr as StoredPullRequest | null;
 		} catch (error) {
-			console.error(`❌ [STORAGE] Failed to get PR`, error);
+			const logger = createLogger({ prId, repoUuid, component: 'pr-storage' });
+			logger.error('Failed to get PR', error, { event: 'get_pr_failed' });
 			return null;
 		}
 	}
@@ -119,7 +126,8 @@ export class PrStorageService {
 			const results = await Promise.all(promises);
 			return results.filter(pr => pr !== null && pr !== undefined) as StoredPullRequest[];
 		} catch (error) {
-			console.error(`❌ [STORAGE] Failed to batch get PRs`, error);
+			const logger = createLogger({ component: 'pr-storage' });
+			logger.error('Failed to batch get PRs', error, { event: 'batch_get_failed', keysCount: prKeys.length });
 			return [];
 		}
 	}
@@ -132,9 +140,10 @@ export class PrStorageService {
 		const existing = await this.getPullRequest(workspaceUuid, repoUuid, prId);
 
 		if (existing) {
+			const logger = createLogger({ prId, repoUuid, component: 'pr-storage' });
 			await storage.delete(prKey);
 			await this.removeFromAllIndexes(existing);
-			console.log(`🗑️ [STORAGE] Deleted PR ${prKey}`);
+			logger.info('PR deleted', { event: 'pr_deleted', key: prKey });
 		}
 	}
 
@@ -162,7 +171,12 @@ export class PrStorageService {
 			}
 			await this.addToIndex(buildIndexKey("byRisk", workspaceUuid, repoUuid, newColor), prKey);
 
-			console.log(`🎨 [STORAGE] Risk color changed: ${oldColor || "none"} → ${newColor}`);
+			const logger = createLogger({ component: 'pr-storage' });
+			logger.info('Risk color changed', {
+				event: 'risk_color_changed',
+				oldColor: oldColor || 'none',
+				newColor,
+			});
 		} else if (!existing) {
 			await this.addToIndex(buildIndexKey("byRisk", workspaceUuid, repoUuid, newColor), prKey);
 		}
@@ -191,7 +205,8 @@ export class PrStorageService {
 				await storage.set(indexKey, index);
 			}
 		} catch (error) {
-			console.error(`❌ [STORAGE] Failed to add to index ${indexKey}`, error);
+			const logger = createLogger({ component: 'pr-storage' });
+			logger.error('Failed to add to index', error, { event: 'add_index_failed', indexKey });
 		}
 	}
 
@@ -206,7 +221,8 @@ export class PrStorageService {
 				await storage.set(indexKey, filtered);
 			}
 		} catch (error) {
-			console.error(`❌ [STORAGE] Failed to remove from index ${indexKey}`, error);
+			const logger = createLogger({ component: 'pr-storage' });
+			logger.error('Failed to remove from index', error, { event: 'remove_index_failed', indexKey });
 		}
 	}
 
@@ -235,7 +251,8 @@ export class PrStorageService {
 				green: greenIndex.length,
 			};
 		} catch (error) {
-			console.error(`❌ [STORAGE] Failed to get telemetry counts`, error);
+			const logger = createLogger({ repoUuid, workspaceUuid, component: 'pr-storage' });
+			logger.error('Failed to get telemetry counts', error, { event: 'telemetry_failed' });
 			return { total: 0, open: 0, red: 0, yellow: 0, green: 0 };
 		}
 	}
@@ -249,7 +266,8 @@ export class PrStorageService {
 			const prKeys = redIndex.slice(0, limit);
 			return await this.getPullRequestsByKeys(prKeys);
 		} catch (error) {
-			console.error(`❌ [STORAGE] Failed to get high-risk PRs`, error);
+			const logger = createLogger({ repoUuid, workspaceUuid, component: 'pr-storage' });
+			logger.error('Failed to get high-risk PRs', error, { event: 'get_high_risk_failed' });
 			return [];
 		}
 	}
@@ -263,7 +281,8 @@ export class PrStorageService {
 			const prKeys = openIndex.slice(0, limit);
 			return await this.getPullRequestsByKeys(prKeys);
 		} catch (error) {
-			console.error(`❌ [STORAGE] Failed to get open PRs`, error);
+			const logger = createLogger({ repoUuid, workspaceUuid, component: 'pr-storage' });
+			logger.error('Failed to get open PRs', error, { event: 'get_open_failed' });
 			return [];
 		}
 	}
@@ -277,7 +296,8 @@ export class PrStorageService {
 			const prKeys = riskIndex.slice(0, limit);
 			return await this.getPullRequestsByKeys(prKeys);
 		} catch (error) {
-			console.error(`❌ [STORAGE] Failed to get PRs by risk ${color}`, error);
+			const logger = createLogger({ repoUuid, workspaceUuid, component: 'pr-storage' });
+			logger.error('Failed to get PRs by risk', error, { event: 'get_by_risk_failed', color });
 			return [];
 		}
 	}
