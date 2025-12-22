@@ -2,7 +2,7 @@ type RiskBadgeProps =
     | { score: number }
     | { level: "low" | "medium" | "high" };
 
-function getRiskConfig(scoreOrLevel: number | "low" | "medium" | "high") {
+export function getRiskConfig(scoreOrLevel: number | "low" | "medium" | "high") {
     let score: number;
 
     if (typeof scoreOrLevel === "string") {

@@ -216,7 +216,7 @@ Indexes are managed automatically:
 Run tests with:
 
 ```bash
-cd src/tests
+cd src/test
 ts-node pr-storage.test.ts
 ```
 
