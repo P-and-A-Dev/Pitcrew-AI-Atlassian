@@ -28,9 +28,7 @@ export function useTelemetry() {
                 if (typeof window !== "undefined" && (window as any).AP) {
                     const { invoke } = await import("@forge/bridge");
                     response = await invoke<TelemetryResponse>("getTelemetry");
-                }
-
-                else {
+                } else {
                     response = {
                         prs: [
                             {
@@ -53,10 +51,16 @@ export function useTelemetry() {
                     };
                 }
 
+
+                if (!response || !Array.isArray(response.prs)) {
+                    throw new Error("Invalid telemetry response");
+                }
+
                 setData(response.prs);
             } catch (err) {
                 console.error(err);
                 setError("Failed to load telemetry data");
+                setData([]);
             } finally {
                 setLoading(false);
             }
