@@ -1,7 +1,6 @@
 import "./App.css";
 
 import DashboardLayout from "./layout/DashboardLayout";
-import { GlobalHeader } from "./Components/header/GlobalHeader";
 
 import { KpiCard } from "./Components/cards/KpiCard";
 import { useDashboardKpis } from "./hooks/useDashboardKpis";
@@ -37,7 +36,6 @@ export default function App() {
     return (
         <DashboardLayout>
             <div className="space-y-6">
-                <GlobalHeader />
 
                 {/* ===== NAV ===== */}
                 <nav
