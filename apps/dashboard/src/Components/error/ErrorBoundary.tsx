@@ -1,5 +1,4 @@
-import { Component } from "react";
-import type { ReactNode } from "react";
+import { Component, type ReactNode } from "react";
 
 interface Props {
     children: ReactNode;
@@ -18,30 +17,30 @@ export class ErrorBoundary extends Component<Props, State> {
         return { hasError: true };
     }
 
-    componentDidCatch(error: Error) {
-        console.error("Unhandled UI error:", error);
+    componentDidCatch(error: unknown) {
+        console.error("UI crash captured by ErrorBoundary:", error);
     }
 
     handleRetry = () => {
-        this.setState({ hasError: false });
+        window.location.reload();
     };
 
     render() {
         if (this.state.hasError) {
             return (
                 <div className="min-h-screen flex items-center justify-center bg-[#0A0F1F] text-white">
-                    <div className="text-center space-y-4">
+                    <div className="max-w-sm text-center space-y-4">
                         <h1 className="text-lg font-semibold">
-                            Something went wrong
+                            Telemetry temporarily unavailable
                         </h1>
 
                         <p className="text-sm opacity-70">
-                            An unexpected error occurred while loading the dashboard.
+                            Please retry in a few moments.
                         </p>
 
                         <button
                             onClick={this.handleRetry}
-                            className="px-4 py-2 text-sm rounded-md bg-white/10 hover:bg-white/20 transition"
+                            className="px-4 py-2 text-sm rounded-md bg-white/10 hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             Retry
                         </button>
