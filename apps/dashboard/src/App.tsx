@@ -11,6 +11,7 @@ import { SprintRaceView } from "./views/SprintRaceView";
 import { PRTelemetryView } from "./views/PRTelemetryView";
 import { TeamLoadView } from "./views/TeamLoadView";
 import { PRDetailView } from "./views/PRDetailView";
+import { ComponentsView } from "./views/ComponentsView";
 
 import { RiskDistributionChart } from "./Components/RiskDistributionChart";
 import { TelemetryFeed } from "./Components/telemetry/TelemetryFeed";
@@ -58,6 +59,9 @@ export default function App() {
                     <NavLink to="/sprint" className={navClass}>
                         Sprint Race
                     </NavLink>
+                    <NavLink to="/components" className={navClass}>
+                        Components
+                    </NavLink>
                 </nav>
 
                 {/* ===== ROUTES ===== */}
@@ -93,6 +97,7 @@ export default function App() {
                     <Route path="/team-load" element={<TeamLoadView />} />
                     <Route path="/flags" element={<FlagsView />} />
                     <Route path="/sprint" element={<SprintRaceView />} />
+                    <Route path="/components" element={<ComponentsView />} />
 
                     <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
