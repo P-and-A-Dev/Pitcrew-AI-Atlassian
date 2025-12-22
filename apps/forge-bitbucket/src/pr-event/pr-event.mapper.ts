@@ -54,7 +54,8 @@ function normalizeBranchName(branchField: unknown): string | null {
 }
 
 function logInvalid(reason: string, raw: RawPrEvent) {
-	console.error("Invalid Bitbucket PR event", {
+	const logger = createLogger({ component: 'parsePrEvent' });
+	logger.error('Invalid Bitbucket PR event', null, {
 		reason,
 		eventType: raw.eventType ?? null,
 		prId: raw.pullrequest?.id ?? null,
@@ -157,7 +158,10 @@ export async function parsePrEvent(rawUnknown: unknown): Promise<InternalPr | nu
 	const validationResult = validateWebhookPayload(rawUnknown);
 
 	if (!validationResult.success) {
-		console.error("🚫 [VALIDATION] Webhook rejected due to validation failure");
+		const logger = createLogger({ component: 'parsePrEvent' });
+		logger.error('Webhook rejected due to validation failure', null, {
+			event: 'validation_failed',
+		});
 		return null;
 	}
 
@@ -209,16 +213,27 @@ export async function parsePrEvent(rawUnknown: unknown): Promise<InternalPr | nu
 			);
 
 			if (!res) {
-				console.error(`safeForgeCall failed for fetchPrDetails after retries`);
-			} else if (!res.ok)
-				console.error(`Failed to fetch PR details: ${res.status} ${res.statusText}`);
-			else {
+				const logger = createLogger({ prId, repoUuid, component: 'fetchPrDetails' });
+				logger.error('safeForgeCall failed for fetchPrDetails after retries', null, {
+					event: 'fetch_pr_details_failed',
+				});
+			} else if (!res.ok) {
+				const logger = createLogger({ prId, repoUuid, component: 'fetchPrDetails' });
+				logger.error('Failed to fetch PR details', null, {
+					event: 'fetch_pr_details_error',
+					status: res.status,
+					statusText: res.statusText,
+				});
+			} else {
 				const data = await res.json();
 				if (data.title)
 					title = data.title;
 			}
 		} catch (err) {
-			console.error("Error fetching PR details via API:", err);
+			const logger = createLogger({ prId, repoUuid, component: 'fetchPrDetails' });
+			logger.error('Error fetching PR details via API', err, {
+				event: 'fetch_pr_details_exception',
+			});
 		}
 	}
 

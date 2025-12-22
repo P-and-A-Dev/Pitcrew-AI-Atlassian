@@ -77,7 +77,10 @@ export async function onPullRequestEvent(e: any, _: any) {
 			if (pr.reviewers) {
 				const reviewerStatus = processAnalyzerService.checkReviewers(pr.reviewers);
 				if (!reviewerStatus.hasReviewers) {
-					console.warn(`⚠️ PR #${pr.prId} has NO reviewers!`);
+					logger.warn('PR has no reviewers assigned', {
+						event: 'no_reviewers_assigned',
+						prId: pr.prId,
+					});
 				}
 			}
 
@@ -188,8 +191,6 @@ export async function onPullRequestEvent(e: any, _: any) {
 	}
 
 	await prStorageService.saveOrUpdatePullRequest(pr);
-
-	console.log(JSON.stringify(pr, null, 2));
 
 	return true;
 }
