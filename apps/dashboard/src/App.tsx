@@ -1,5 +1,4 @@
 import "./App.css";
-import { useState } from "react";
 
 import DashboardLayout from "./layout/DashboardLayout";
 import { GlobalHeader } from "./Components/header/GlobalHeader";
@@ -11,151 +10,92 @@ import { FlagsView } from "./views/FlagsView";
 import { SprintRaceView } from "./views/SprintRaceView";
 import { PRTelemetryView } from "./views/PRTelemetryView";
 import { TeamLoadView } from "./views/TeamLoadView";
+import { PRDetailView } from "./views/PRDetailView";
 
 import { RiskDistributionChart } from "./Components/RiskDistributionChart";
 import { TelemetryFeed } from "./Components/telemetry/TelemetryFeed";
 import { FlagsSummary } from "./Components/flags/FlagsSummary";
 
-type View =
-    | "dashboard"
-    | "pr-telemetry"
-    | "flags"
-    | "sprint"
-    | "team-load";
+import {
+    Routes,
+    Route,
+    NavLink,
+    Navigate,
+} from "react-router-dom";
 
 export default function App() {
-    const [view, setView] = useState<View>("dashboard");
     const { data: kpis } = useDashboardKpis();
+
+    const navClass = ({ isActive }: { isActive: boolean }) =>
+        `px-3 py-1 rounded text-sm transition focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+            isActive
+                ? "bg-blue-600 text-white"
+                : "bg-gray-700 text-white/80 hover:bg-gray-600"
+        }`;
 
     return (
         <DashboardLayout>
             <div className="space-y-6">
-                {/* ===== GLOBAL HEADER ===== */}
                 <GlobalHeader />
 
-                {/* ===== TOP NAV (DEV / HACKATHON) ===== */}
-                <div className="flex flex-wrap gap-2">
-                    <button
-                        onClick={() => setView("dashboard")}
-                        className={`px-3 py-1 rounded text-sm ${
-                            view === "dashboard"
-                                ? "bg-blue-600"
-                                : "bg-gray-700 hover:bg-gray-600"
-                        }`}
-                    >
+                {/* ===== NAV ===== */}
+                <nav
+                    className="flex flex-wrap gap-2"
+                    aria-label="Primary navigation"
+                >
+                    <NavLink to="/" end className={navClass}>
                         Dashboard
-                    </button>
-
-                    <button
-                        onClick={() => setView("pr-telemetry")}
-                        className={`px-3 py-1 rounded text-sm ${
-                            view === "pr-telemetry"
-                                ? "bg-blue-600"
-                                : "bg-gray-700 hover:bg-gray-600"
-                        }`}
-                    >
+                    </NavLink>
+                    <NavLink to="/telemetry" className={navClass}>
                         PR Telemetry
-                    </button>
-
-                    <button
-                        onClick={() => setView("team-load")}
-                        className={`px-3 py-1 rounded text-sm ${
-                            view === "team-load"
-                                ? "bg-blue-600"
-                                : "bg-gray-700 hover:bg-gray-600"
-                        }`}
-                    >
+                    </NavLink>
+                    <NavLink to="/team-load" className={navClass}>
                         Team Load
-                    </button>
-
-                    <button
-                        onClick={() => setView("flags")}
-                        className={`px-3 py-1 rounded text-sm ${
-                            view === "flags"
-                                ? "bg-blue-600"
-                                : "bg-gray-700 hover:bg-gray-600"
-                        }`}
-                    >
+                    </NavLink>
+                    <NavLink to="/flags" className={navClass}>
                         Flags
-                    </button>
-
-                    <button
-                        onClick={() => setView("sprint")}
-                        className={`px-3 py-1 rounded text-sm ${
-                            view === "sprint"
-                                ? "bg-blue-600"
-                                : "bg-gray-700 hover:bg-gray-600"
-                        }`}
-                    >
+                    </NavLink>
+                    <NavLink to="/sprint" className={navClass}>
                         Sprint Race
-                    </button>
-                </div>
+                    </NavLink>
+                </nav>
 
-                {/* ================= DASHBOARD HOME ================= */}
-                {view === "dashboard" && (
-                    <>
-                        {/* KPIs */}
-                        {kpis && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                                <KpiCard
-                                    label="Open PRs"
-                                    value={kpis.openPRs}
-                                />
+                {/* ===== ROUTES ===== */}
+                <Routes>
+                    <Route
+                        path="/"
+                        element={
+                            <>
+                                {kpis && (
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                                        <KpiCard label="Open PRs" value={kpis.openPRs} />
+                                        <KpiCard label="Risky PRs" value={kpis.riskyPRs} severity="critical" />
+                                        <KpiCard label="Avg PR Size" value={kpis.avgPrSize} hint="lines changed" />
+                                        <KpiCard label="PRs Without Tests" value={kpis.prsWithoutTests} severity="warning" />
+                                        <KpiCard label="Critical Files" value={kpis.criticalFilesTouched} severity="critical" />
+                                    </div>
+                                )}
 
-                                <KpiCard
-                                    label="Risky PRs"
-                                    value={kpis.riskyPRs}
-                                    severity="critical"
-                                />
+                                <TelemetryFeed />
+                                <FlagsSummary onOpenFlags={() => {}} />
 
-                                <KpiCard
-                                    label="Avg PR Size"
-                                    value={kpis.avgPrSize}
-                                    hint="lines changed"
-                                />
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <div className="lg:col-span-1">
+                                        <RiskDistributionChart />
+                                    </div>
+                                </div>
+                            </>
+                        }
+                    />
 
-                                <KpiCard
-                                    label="PRs Without Tests"
-                                    value={kpis.prsWithoutTests}
-                                    severity="warning"
-                                />
+                    <Route path="/telemetry" element={<PRTelemetryView />} />
+                    <Route path="/telemetry/pr/:id" element={<PRDetailView />} />
+                    <Route path="/team-load" element={<TeamLoadView />} />
+                    <Route path="/flags" element={<FlagsView />} />
+                    <Route path="/sprint" element={<SprintRaceView />} />
 
-                                <KpiCard
-                                    label="Critical Files"
-                                    value={kpis.criticalFilesTouched}
-                                    severity="critical"
-                                />
-                            </div>
-                        )}
-
-                        {/* Live Telemetry */}
-                        <TelemetryFeed />
-
-                        {/* Flags Summary */}
-                        <FlagsSummary
-                            onOpenFlags={() => setView("flags")}
-                        />
-
-                        {/* Extra visual */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <div className="lg:col-span-1">
-                                <RiskDistributionChart />
-                            </div>
-                        </div>
-                    </>
-                )}
-
-                {/* ================= PR TELEMETRY ================= */}
-                {view === "pr-telemetry" && <PRTelemetryView />}
-
-                {/* ================= TEAM LOAD ================= */}
-                {view === "team-load" && <TeamLoadView />}
-
-                {/* ================= FLAGS ================= */}
-                {view === "flags" && <FlagsView />}
-
-                {/* ================= SPRINT ================= */}
-                {view === "sprint" && <SprintRaceView />}
+                    <Route path="*" element={<Navigate to="/" />} />
+                </Routes>
             </div>
         </DashboardLayout>
     );
