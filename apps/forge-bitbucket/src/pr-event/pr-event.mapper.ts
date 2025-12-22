@@ -2,6 +2,7 @@ import { route, asApp } from "@forge/api";
 import { RawPrEvent } from "../types/raw-pr-event";
 import { InternalFileMod, InternalPr, InternalPrEventType, InternalPrState } from "../models/internal-pr";
 import { validateWebhookPayload } from "../validation/schemas";
+import { safeForgeCall } from "../utils/safe-forge-call";
 
 function isObject(v: unknown): v is Record<string, unknown> {
 	return typeof v === "object" && v !== null;
@@ -68,9 +69,17 @@ export async function fetchPrDiffStat(
 	prId: number
 ): Promise<{ modifiedFiles: InternalFileMod[]; totalLinesAdded: number; totalLinesRemoved: number } | null> {
 	try {
-		const res = await asApp().requestBitbucket(
-			route`/2.0/repositories/${workspaceUuid}/${repoUuid}/pullrequests/${prId}/diffstat`
+		const res = await safeForgeCall(
+			() => asApp().requestBitbucket(
+				route`/2.0/repositories/${workspaceUuid}/${repoUuid}/pullrequests/${prId}/diffstat`
+			),
+			{ context: 'fetchPrDiffStat' }
 		);
+
+		if (!res) {
+			console.warn(`safeForgeCall failed for fetchPrDiffStat after retries`);
+			return null;
+		}
 
 		if (!res.ok) {
 			console.warn(`Failed to fetch PR diffstat: ${res.status} ${res.statusText}`);
@@ -165,11 +174,16 @@ export async function parsePrEvent(rawUnknown: unknown): Promise<InternalPr | nu
 
 	if (!title && workspaceUuid && prId && repoUuid) {
 		try {
-			const res = await asApp().requestBitbucket(
-				route`/2.0/repositories/${workspaceUuid}/${repoUuid}/pullrequests/${prId}`
+			const res = await safeForgeCall(
+				() => asApp().requestBitbucket(
+					route`/2.0/repositories/${workspaceUuid}/${repoUuid}/pullrequests/${prId}`
+				),
+				{ context: 'fetchPrDetails', maxRetries: 2 }
 			);
 
-			if (!res.ok)
+			if (!res) {
+				console.error(`safeForgeCall failed for fetchPrDetails after retries`);
+			} else if (!res.ok)
 				console.error(`Failed to fetch PR details: ${res.status} ${res.statusText}`);
 			else {
 				const data = await res.json();

@@ -7,7 +7,7 @@
   "scripts": {
     "build": "forge deploy",
     "logs": "forge logs --tail",
-    "test": "jest",
+    "test": "npx jest --detectOpenHandles",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"
   },
