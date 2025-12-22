@@ -1,4 +1,5 @@
 import { storage } from "@forge/api";
+import { createLogger } from "../utils/logger";
 
 const PR_ANALYSIS_PREFIX = "pr-analysis";
 
@@ -22,7 +23,8 @@ export class StorageService {
 		try {
 			return await storage.get(this.getPrKey(repoUuid, prId));
 		} catch (error) {
-			console.error(`Failed to get analysis state for PR ${prId} in repo ${repoUuid}`, error);
+			const logger = createLogger({ prId, repoUuid, component: 'storage' });
+			logger.error('Failed to get analysis state', error, { event: 'get_state_failed' });
 			return undefined;
 		}
 	}
@@ -31,7 +33,8 @@ export class StorageService {
 		try {
 			await storage.set(this.getPrKey(repoUuid, prId), state);
 		} catch (error) {
-			console.error(`Failed to set analysis state for PR ${prId} in repo ${repoUuid}`, error);
+			const logger = createLogger({ prId, repoUuid, component: 'storage' });
+			logger.error('Failed to set analysis state', error, { event: 'set_state_failed' });
 		}
 	}
 
@@ -40,11 +43,12 @@ export class StorageService {
 	 * Call this on fulfilled/rejected events to prevent storage bloat.
 	 */
 	async deletePrAnalysisState(repoUuid: string, prId: number): Promise<void> {
+		const logger = createLogger({ prId, repoUuid, component: 'storage' });
 		try {
 			await storage.delete(this.getPrKey(repoUuid, prId));
-			console.log(`🧹 Cleaned up analysis state for PR ${prId} in repo ${repoUuid}`);
+			logger.info('Cleaned up analysis state', { event: 'state_deleted' });
 		} catch (error) {
-			console.error(`Failed to delete analysis state for PR ${prId} in repo ${repoUuid}`, error);
+			logger.error('Failed to delete analysis state', error, { event: 'delete_state_failed' });
 		}
 	}
 }

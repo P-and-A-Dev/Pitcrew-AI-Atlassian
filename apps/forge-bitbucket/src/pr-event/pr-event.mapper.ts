@@ -1,6 +1,10 @@
 import { route, asApp } from "@forge/api";
 import { RawPrEvent } from "../types/raw-pr-event";
 import { InternalFileMod, InternalPr, InternalPrEventType, InternalPrState } from "../models/internal-pr";
+import { validateWebhookPayload } from "../validation/schemas";
+import { safeForgeCall } from "../utils/safe-forge-call";
+import { diffCache } from "../utils/cache";
+import { createLogger } from "../utils/logger";
 
 function isObject(v: unknown): v is Record<string, unknown> {
 	return typeof v === "object" && v !== null;
@@ -66,13 +70,36 @@ export async function fetchPrDiffStat(
 	repoUuid: string,
 	prId: number
 ): Promise<{ modifiedFiles: InternalFileMod[]; totalLinesAdded: number; totalLinesRemoved: number } | null> {
+	const logger = createLogger({ prId, repoUuid, component: 'fetchPrDiffStat' });
+
+	// Check cache first (key: repo:prId)
+	const cacheKey = `diff:${repoUuid}:${prId}`;
+	const cached = diffCache.get(cacheKey);
+
+	if (cached) {
+		logger.info('Diff cache hit', { event: 'cache_hit', cacheKey });
+		return cached;
+	}
+
 	try {
-		const res = await asApp().requestBitbucket(
-			route`/2.0/repositories/${workspaceUuid}/${repoUuid}/pullrequests/${prId}/diffstat`
+		const res = await safeForgeCall(
+			() => asApp().requestBitbucket(
+				route`/2.0/repositories/${workspaceUuid}/${repoUuid}/pullrequests/${prId}/diffstat`
+			),
+			{ context: 'fetchPrDiffStat' }
 		);
 
+		if (!res) {
+			logger.warn('safeForgeCall failed after retries', { event: 'fetch_failed' });
+			return null;
+		}
+
 		if (!res.ok) {
-			console.warn(`Failed to fetch PR diffstat: ${res.status} ${res.statusText}`);
+			logger.warn('Failed to fetch diffstat', {
+				event: 'fetch_error',
+				status: res.status,
+				statusText: res.statusText,
+			});
 			return null;
 		}
 
@@ -102,9 +129,19 @@ export async function fetchPrDiffStat(
 			});
 		}
 
-		return {modifiedFiles, totalLinesAdded, totalLinesRemoved};
+		const result = { modifiedFiles, totalLinesAdded, totalLinesRemoved };
+
+		// Cache for 5 minutes
+		diffCache.set(cacheKey, result, 300000);
+		logger.info('Diff fetched and cached', {
+			event: 'cache_miss',
+			cacheKey,
+			filesCount: modifiedFiles.length,
+		});
+
+		return result;
 	} catch (err) {
-		console.error("Error fetching PR diffstat:", err);
+		logger.error('Error fetching diffstat', err, { event: 'fetch_exception' });
 		return null;
 	}
 }
@@ -114,12 +151,18 @@ export async function fetchPrDiffStat(
  * Return null if invalid (and log the error).
  */
 export async function parsePrEvent(rawUnknown: unknown): Promise<InternalPr | null> {
-	if (!isObject(rawUnknown)) {
-		console.error("Invalid Bitbucket PR event: payload is not an object");
+	// ============================================================
+	// STEP 1: Validate payload with Zod BEFORE any processing
+	// ============================================================
+	const validationResult = validateWebhookPayload(rawUnknown);
+
+	if (!validationResult.success) {
+		console.error("🚫 [VALIDATION] Webhook rejected due to validation failure");
 		return null;
 	}
 
-	const raw = rawUnknown as RawPrEvent;
+	// Type-safe after validation
+	const raw = validationResult.data as any as RawPrEvent;
 
 	const prId = asNumber(raw.pullrequest?.id);
 	if (prId === null) {
@@ -158,11 +201,16 @@ export async function parsePrEvent(rawUnknown: unknown): Promise<InternalPr | nu
 
 	if (!title && workspaceUuid && prId && repoUuid) {
 		try {
-			const res = await asApp().requestBitbucket(
-				route`/2.0/repositories/${workspaceUuid}/${repoUuid}/pullrequests/${prId}`
+			const res = await safeForgeCall(
+				() => asApp().requestBitbucket(
+					route`/2.0/repositories/${workspaceUuid}/${repoUuid}/pullrequests/${prId}`
+				),
+				{ context: 'fetchPrDetails', maxRetries: 2 }
 			);
 
-			if (!res.ok)
+			if (!res) {
+				console.error(`safeForgeCall failed for fetchPrDetails after retries`);
+			} else if (!res.ok)
 				console.error(`Failed to fetch PR details: ${res.status} ${res.statusText}`);
 			else {
 				const data = await res.json();

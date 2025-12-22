@@ -7,8 +7,47 @@ import {
 	TIMING_THRESHOLDS
 } from "../config/constants";
 
+/**
+ * Risk Scoring Service
+ * 
+ * Calculates PR risk score (0-100) based on multiple factors:
+ * - File count and types (critical, tests, docs)
+ * - Lines changed (added + removed)
+ * - Process signals (reviewers, timing, test coverage)
+ * 
+ * Returns score with color classification (green/yellow/red) and detailed factors.
+ */
 export class RiskScoringService {
 
+	/**
+	 * Calculates comprehensive risk score for a PR.
+	 * 
+	 * **Score Components:**
+	 * - Files (40%): Weighted by file type (critical > code > docs > generated)
+	 * - Lines (30%): Total lines changed (added + removed)
+	 * - Signals (30%): Reviewers, tests, off-hours, critical files
+	 * 
+	 * **Special Cases:**
+	 * - Docs-only PR: Capped at 20 risk (80+ score, green)
+	 * - Tests-only PR: +20 bonus
+	 * - Very small PR (<20 lines): Floor at 60 score (yellow)
+	 * 
+	 * **Color Thresholds:**
+	 * - Green: ≥80
+	 * - Yellow: 50-79
+	 * - Red: <50
+	 * 
+	 * @param pr - Internal PR object with metrics, files, timing
+	 * @returns Object with score (0-100), color, and human-readable factors
+	 * 
+	 * @example
+	 * ```typescript
+	 * const risk = riskScoringService.calculateRisk(pr);
+	 * console.log(risk.score); // 65
+	 * console.log(risk.color); // "yellow"
+	 * console.log(risk.factors); // ["2 Critical File(s)", "No Tests Detected", ...]
+	 * ```
+	 */
 	calculateRisk(pr: InternalPr): { score: number; color: "green" | "yellow" | "red"; factors: string[] } {
 		const factors: string[] = [];
 
@@ -16,7 +55,7 @@ export class RiskScoringService {
 		const metrics = pr.analysisMetrics;
 
 		if (!metrics || totalFiles === 0) {
-			return {score: 100, color: "green", factors: ["No files modified"]};
+			return { score: 100, color: "green", factors: ["No files modified"] };
 		}
 
 		const isDocsOnly = metrics.docFilesCount > 0 &&
@@ -159,7 +198,7 @@ export class RiskScoringService {
 			color = "yellow";
 		}
 
-		return {score, color, factors};
+		return { score, color, factors };
 	}
 }
 
