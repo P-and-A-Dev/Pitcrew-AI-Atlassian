@@ -93,7 +93,14 @@ export async function onPullRequestEvent(e: any, _: any) {
 					activityType = "merged";
 				}
 
-				console.warn(`⚠️ PR #${pr.prId} ${activityType} during off-hours (Weekend: ${timing.isWeekend}, Late: ${timing.isLate}, UTC Hour: ${timing.utcHour}, UTC Day: ${timing.utcDay})`);
+				logger.warn('PR activity during off-hours', {
+					event: 'off_hours_activity',
+					activityType,
+					isWeekend: timing.isWeekend,
+					isLate: timing.isLate,
+					utcHour: timing.utcHour,
+					utcDay: timing.utcDay,
+				});
 			}
 
 			const risk = riskScoringService.calculateRisk(pr);
@@ -101,11 +108,16 @@ export async function onPullRequestEvent(e: any, _: any) {
 			pr.riskColor = risk.color;
 			pr.riskFactors = risk.factors;
 
-			console.log(`✅ Diff fetched & Analyzed: ${pr.modifiedFiles.length} files. Critical: ${metrics.criticalFilesCount}, Tests: ${metrics.testFilesCount}, Size: ${size}`);
-			console.log(`🎯 Risk Score: ${pr.riskScore} (${pr.riskColor})`);
-			if (pr.riskFactors.length > 0) {
-				console.log(`   Factors: ${pr.riskFactors.join(", ")}`);
-			}
+			logger.info('Analysis completed', {
+				event: 'analysis_complete',
+				filesCount: pr.modifiedFiles.length,
+				criticalFiles: metrics.criticalFilesCount,
+				testFiles: metrics.testFilesCount,
+				sizeCategory: size,
+				riskScore: pr.riskScore,
+				riskColor: pr.riskColor,
+				riskFactors: pr.riskFactors,
+			});
 		}
 	}
 
@@ -124,7 +136,10 @@ export async function onPullRequestEvent(e: any, _: any) {
 		let shouldPostComment = false;
 
 		if (existingPr?.pitcrewCommentFingerprint === newFingerprint) {
-			console.log(`💬 [COMMENT] Skip comment update, fingerprint unchanged for PR #${pr.prId}`);
+			logger.info('Skip comment update, fingerprint unchanged', {
+				event: 'comment_skip',
+				fingerprint: newFingerprint,
+			});
 		} else if (commentId) {
 			const updateResult = await bitbucketCommentsService.updatePullRequestComment(
 				pr.workspaceUuid,
@@ -135,7 +150,10 @@ export async function onPullRequestEvent(e: any, _: any) {
 			);
 
 			if (updateResult === false) {
-				console.log(`⚠️ [COMMENT] Update failed (404), falling back to create new comment on PR #${pr.prId}`);
+				logger.info('Comment update failed (404), creating new comment', {
+					event: 'comment_fallback_create',
+					oldCommentId: commentId,
+				});
 				const createResult = await bitbucketCommentsService.createPullRequestComment(
 					pr.workspaceUuid,
 					pr.repoUuid,
