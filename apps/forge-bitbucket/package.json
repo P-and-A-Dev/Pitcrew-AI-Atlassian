@@ -1,0 +1,14 @@
+{
+  "name": "bitbucket-dynamic-pipelines-provider",
+  "version": "1.1.2",
+  "main": "index.js",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "build": "forge deploy",
+    "logs": "forge logs --tail"
+  },
+  "dependencies": {
+    "@forge/api": "^6.4.2"
+  }
+}

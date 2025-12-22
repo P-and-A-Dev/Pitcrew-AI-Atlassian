@@ -1,0 +1,27 @@
+modules:
+  trigger:
+    - key: bb-pr-events
+      function: pr-events-func
+      events:
+        - avi:bitbucket:created:pullrequest
+        - avi:bitbucket:updated:pullrequest
+        - avi:bitbucket:fulfilled:pullrequest
+        - avi:bitbucket:rejected:pullrequest
+
+  function:
+    - key: pr-events-func
+      handler: pr-webhook.onPullRequestEvent
+
+permissions:
+  scopes:
+    - read:pullrequest:bitbucket
+    - write:pullrequest:bitbucket
+    - read:repository:bitbucket
+    - storage:app
+
+app:
+  runtime:
+    name: nodejs22.x
+    memoryMB: 256
+    architecture: arm64
+  id: ari:cloud:ecosystem::app/9624fb55-7cb5-4c2c-bb16-f3216e4b5f01
